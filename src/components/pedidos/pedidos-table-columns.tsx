@@ -73,6 +73,19 @@ export const pedidosColumns: ColumnDef<any>[] = [
     ),
   },
   {
+    accessorKey: "monto_total_usd",
+    header: "USD",
+    cell: ({ row }) => {
+      const usd = row.original.monto_total_usd
+      if (!usd) return <span className="text-muted-foreground">—</span>
+      return (
+        <span className="tabular-nums text-green-700">
+          US${Number(usd).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+        </span>
+      )
+    },
+  },
+  {
     accessorKey: "saldo_pendiente",
     header: "Saldo",
     cell: ({ row }) => {

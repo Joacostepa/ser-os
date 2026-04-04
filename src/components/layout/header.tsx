@@ -1,6 +1,7 @@
 "use client"
 
 import { Bell } from "lucide-react"
+import { CotizacionDolar } from "@/components/shared/cotizacion-dolar"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
@@ -61,6 +62,7 @@ export function Header() {
         </BreadcrumbList>
       </Breadcrumb>
 
+      <CotizacionDolar />
       <Button variant="ghost" size="icon" className="relative">
         <Bell className="h-4 w-4" />
       </Button>

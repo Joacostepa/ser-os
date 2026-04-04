@@ -5,6 +5,7 @@ import { ESTADO_INTERNO_A_PUBLICO } from "@/lib/constants"
 import type { CrearPedidoInput } from "@/lib/validations/pedidos"
 import type { EstadoInterno } from "@/types/database"
 import { revalidatePath } from "next/cache"
+import { getCotizacionVenta } from "@/lib/dolar-api"
 
 export async function getPedidos(filters?: {
   estado_interno?: EstadoInterno
@@ -101,6 +102,10 @@ export async function getPedido(id: string) {
 export async function crearPedido(input: CrearPedidoInput) {
   const supabase = await createClient()
 
+  // Snapshot cotización USD
+  const cotizacionUsd = await getCotizacionVenta("blue")
+  const montoTotalUsd = cotizacionUsd ? input.monto_total / cotizacionUsd : null
+
   // Crear el pedido
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
@@ -115,6 +120,9 @@ export async function crearPedido(input: CrearPedidoInput) {
       monto_pagado: 0,
       estado_interno: "nuevo",
       estado_publico: "recibido",
+      cotizacion_usd: cotizacionUsd,
+      cotizacion_tipo: "blue",
+      monto_total_usd: montoTotalUsd ? Math.round(montoTotalUsd * 100) / 100 : null,
     })
     .select()
     .single()

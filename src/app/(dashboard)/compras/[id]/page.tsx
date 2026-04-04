@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowLeft, Package, Truck, FileText, Calendar } from "lucide-react"
+import { ArrowLeft, Package, Truck, FileText, Calendar, DollarSign } from "lucide-react"
 import { ESTADO_COMPRA_CONFIG } from "@/lib/constants"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -130,8 +130,28 @@ export default async function CompraDetailPage({
             <p className="text-lg font-bold">
               ${montoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
             </p>
+            {compra.monto_total_usd && (
+              <p className="text-xs text-green-700">
+                US${Number(compra.monto_total_usd).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+              </p>
+            )}
           </CardContent>
         </Card>
+
+        {compra.cotizacion_usd && (
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <DollarSign className="h-4 w-4" />
+                Cotización
+              </div>
+              <p className="text-lg font-bold">
+                ${Number(compra.cotizacion_usd).toLocaleString("es-AR")}
+              </p>
+              <p className="text-xs text-muted-foreground capitalize">{compra.cotizacion_tipo}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {(compra.fecha_esperada || compra.fecha_recibida) && (

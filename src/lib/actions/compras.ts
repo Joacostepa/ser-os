@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import type { EstadoCompra } from "@/types/database"
+import { getCotizacionVenta } from "@/lib/dolar-api"
 
 export async function getCompras(filtros?: {
   busqueda?: string
@@ -75,6 +76,13 @@ export async function crearCompra(data: {
 }) {
   const supabase = await createClient()
 
+  // Snapshot cotización USD
+  const cotizacionUsd = await getCotizacionVenta("blue")
+
+  // Calculate total from items
+  const montoTotalArs = data.items.reduce((sum, i) => sum + (i.cantidad * i.precio_unitario), 0)
+  const montoTotalUsd = cotizacionUsd ? Math.round((montoTotalArs / cotizacionUsd) * 100) / 100 : null
+
   // Create compra
   const { data: compra, error: compraError } = await supabase
     .from("compras")
@@ -84,6 +92,9 @@ export async function crearCompra(data: {
       fecha_esperada: data.fecha_esperada || null,
       notas: data.notas || null,
       estado: "borrador",
+      cotizacion_usd: cotizacionUsd,
+      cotizacion_tipo: "blue",
+      monto_total_usd: montoTotalUsd,
     })
     .select()
     .single()

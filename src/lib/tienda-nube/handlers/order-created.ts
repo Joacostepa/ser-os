@@ -1,6 +1,7 @@
 import type { WebhookContext } from "./index"
 import { ESTADO_INTERNO_A_PUBLICO } from "@/lib/constants"
 import type { EstadoInterno } from "@/types/database"
+import { getCotizacionVenta } from "@/lib/dolar-api"
 
 export async function handleOrderCreated(ctx: WebhookContext) {
   const { client, supabase, tienda, resourceId } = ctx
@@ -37,6 +38,10 @@ export async function handleOrderCreated(ctx: WebhookContext) {
   const montoTotal = parseFloat(order.total || "0")
   const montoPagado = isPaid ? montoTotal : 0
 
+  // Snapshot cotización USD
+  const cotizacionUsd = await getCotizacionVenta("blue")
+  const montoTotalUsd = cotizacionUsd ? Math.round((montoTotal / cotizacionUsd) * 100) / 100 : null
+
   // Create order
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
@@ -55,6 +60,9 @@ export async function handleOrderCreated(ctx: WebhookContext) {
       tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
       datos_envio: order.shipping_address,
       observaciones: order.note || null,
+      cotizacion_usd: cotizacionUsd,
+      cotizacion_tipo: "blue",
+      monto_total_usd: montoTotalUsd,
     })
     .select()
     .single()

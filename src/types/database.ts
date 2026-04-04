@@ -126,11 +126,14 @@ export interface Database {
           tipo_despacho: TipoDespacho | null
           observaciones: string | null
           datos_envio: Record<string, unknown> | null
+          cotizacion_usd: number | null
+          cotizacion_tipo: string | null
+          monto_total_usd: number | null
           codigo_seguimiento: string
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["pedidos"]["Row"], "id" | "created_at" | "updated_at" | "codigo_seguimiento" | "saldo_pendiente">
+        Insert: Omit<Database["public"]["Tables"]["pedidos"]["Row"], "id" | "created_at" | "updated_at" | "codigo_seguimiento" | "saldo_pendiente" | "cotizacion_usd" | "cotizacion_tipo" | "monto_total_usd"> & { cotizacion_usd?: number | null; cotizacion_tipo?: string | null; monto_total_usd?: number | null }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
       }
       items_pedido: {
@@ -309,11 +312,14 @@ export interface Database {
           fecha_pedido: string
           fecha_esperada: string | null
           fecha_recibida: string | null
+          cotizacion_usd: number | null
+          cotizacion_tipo: string | null
+          monto_total_usd: number | null
           notas: string | null
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["compras"]["Row"], "id" | "created_at" | "updated_at">
+        Insert: Omit<Database["public"]["Tables"]["compras"]["Row"], "id" | "created_at" | "updated_at" | "cotizacion_usd" | "cotizacion_tipo" | "monto_total_usd"> & { cotizacion_usd?: number | null; cotizacion_tipo?: string | null; monto_total_usd?: number | null }
         Update: Partial<Database["public"]["Tables"]["compras"]["Insert"]>
       }
       items_compra: {
