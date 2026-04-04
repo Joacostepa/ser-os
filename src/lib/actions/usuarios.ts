@@ -117,6 +117,10 @@ export async function invitarUsuario(data: {
 
   if (existingInv) throw new Error("Ya existe una invitacion pendiente para ese email")
 
+  // Generate token and expiration
+  const token = crypto.randomUUID().replace(/-/g, "")
+  const fechaExpiracion = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+
   const { data: invitacion, error } = await supabase
     .from("invitaciones")
     .insert({
@@ -125,7 +129,9 @@ export async function invitarUsuario(data: {
       rol: data.rol,
       area: data.area || null,
       invitado_por: data.invitado_por,
+      token,
       estado: "pendiente",
+      fecha_expiracion: fechaExpiracion,
     })
     .select()
     .single()
