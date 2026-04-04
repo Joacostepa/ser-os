@@ -16,6 +16,7 @@ interface CosteoProductoResult {
   costo_total: number
   desglose: DesgloseItem[]
   receta_completa: boolean
+  fuente: "receta" | "costo_base" | "sin_definir"
 }
 
 interface CosteoItemPedido {
@@ -53,14 +54,36 @@ export async function calcularCostoUnitarioProducto(
     .single()
 
   if (error || !receta) {
-    return { costo_total: 0, desglose: [], receta_completa: false }
+    // No recipe — fall back to producto.costo_base
+    const { data: producto } = await supabase
+      .from("productos")
+      .select("costo_base")
+      .eq("id", productoId)
+      .single()
+
+    const costoBase = Number(producto?.costo_base || 0)
+    if (costoBase > 0) {
+      return { costo_total: costoBase, desglose: [], receta_completa: true, fuente: "costo_base" }
+    }
+    return { costo_total: 0, desglose: [], receta_completa: false, fuente: "sin_definir" }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const items = (receta.items || []) as any[]
 
   if (items.length === 0) {
-    return { costo_total: 0, desglose: [], receta_completa: false }
+    // Recipe exists but has no items — fall back to costo_base
+    const { data: producto } = await supabase
+      .from("productos")
+      .select("costo_base")
+      .eq("id", productoId)
+      .single()
+
+    const costoBase = Number(producto?.costo_base || 0)
+    if (costoBase > 0) {
+      return { costo_total: costoBase, desglose: [], receta_completa: true, fuente: "costo_base" }
+    }
+    return { costo_total: 0, desglose: [], receta_completa: false, fuente: "sin_definir" }
   }
 
   let costoTotal = 0
@@ -95,6 +118,7 @@ export async function calcularCostoUnitarioProducto(
     costo_total: Math.round(costoTotal * 100) / 100,
     desglose,
     receta_completa: recetaCompleta,
+    fuente: "receta" as const,
   }
 }
 

@@ -45,3 +45,18 @@ export async function getProducto(id: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data as any
 }
+
+export async function actualizarCostoBase(productoId: string, costoBase: number) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from("productos")
+    .update({ costo_base: costoBase })
+    .eq("id", productoId)
+
+  if (error) throw new Error(error.message)
+
+  const { revalidatePath } = await import("next/cache")
+  revalidatePath(`/productos/${productoId}`)
+  revalidatePath("/productos")
+}

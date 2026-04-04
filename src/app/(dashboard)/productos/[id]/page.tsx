@@ -12,9 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { CanalBadge } from "@/components/shared/canal-badge"
-import { ArrowLeft, Package } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { RecetaEditor } from "./receta-editor"
+import { CostoCard } from "./costo-card"
 
 export default async function ProductoDetailPage({
   params,
@@ -33,6 +34,14 @@ export default async function ProductoDetailPage({
     0
   ) ?? 0
 
+  // Calculate recipe cost server-side
+  const tieneReceta = receta?.items?.length > 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const costoReceta = tieneReceta ? receta.items.reduce((sum: number, item: any) => {
+    const costo = Number(item.costo_override ?? item.insumo?.costo_unitario ?? 0)
+    return sum + (Number(item.cantidad) * costo)
+  }, 0) : 0
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -43,23 +52,23 @@ export default async function ProductoDetailPage({
         </Link>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{producto.nombre}</h1>
-            <Badge variant="outline" className={producto.tipo === "personalizable" ? "border-purple-300 text-purple-700" : ""}>
+            <h1 className="text-xl font-medium text-stone-900">{producto.nombre}</h1>
+            <Badge variant="secondary" className={producto.tipo === "personalizable" ? "bg-violet-50 text-violet-700" : "bg-blue-50 text-blue-700"}>
               {producto.tipo === "estandar" ? "Estándar" : "Personalizable"}
             </Badge>
           </div>
           {producto.sku && (
-            <p className="text-sm text-muted-foreground">SKU: {producto.sku}</p>
+            <p className="text-sm text-stone-400">SKU: {producto.sku}</p>
           )}
         </div>
       </div>
 
       {/* Info cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground mb-1">Stock total</p>
-            <p className={`text-2xl font-bold ${totalStock === 0 ? "text-red-600" : ""}`}>
+            <p className="text-sm text-stone-500 mb-1">Stock total</p>
+            <p className={`text-2xl font-mono font-medium ${totalStock === 0 ? "text-red-600" : "text-stone-900"}`}>
               {totalStock}
             </p>
           </CardContent>
@@ -67,8 +76,8 @@ export default async function ProductoDetailPage({
 
         <Card>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground mb-1">Precio mayorista</p>
-            <p className="text-2xl font-bold">
+            <p className="text-sm text-stone-500 mb-1">Precio mayorista</p>
+            <p className="text-2xl font-mono font-medium text-stone-900">
               {producto.precio_mayorista
                 ? `$${Number(producto.precio_mayorista).toLocaleString("es-AR")}`
                 : "—"}
@@ -76,20 +85,17 @@ export default async function ProductoDetailPage({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground mb-1">Costo base</p>
-            <p className="text-2xl font-bold">
-              {producto.costo_base
-                ? `$${Number(producto.costo_base).toLocaleString("es-AR")}`
-                : "—"}
-            </p>
-          </CardContent>
-        </Card>
+        <CostoCard
+          productoId={producto.id}
+          costoBase={producto.costo_base}
+          costoReceta={costoReceta}
+          tieneReceta={tieneReceta}
+          precioMayorista={producto.precio_mayorista}
+        />
 
         <Card>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground mb-1">Publicado en</p>
+            <p className="text-sm text-stone-500 mb-1">Publicado en</p>
             <div className="flex gap-1 mt-1">
               {producto.productos_tienda?.length > 0 ? (
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,7 +103,7 @@ export default async function ProductoDetailPage({
                   <CanalBadge key={pt.tienda_id} canal={pt.tienda?.canal} />
                 ))
               ) : (
-                <span className="text-sm text-muted-foreground">Ninguna tienda</span>
+                <span className="text-sm text-stone-400">Ninguna tienda</span>
               )}
             </div>
           </CardContent>
@@ -133,16 +139,16 @@ export default async function ProductoDetailPage({
                   return (
                     <TableRow key={v.id}>
                       <TableCell className="font-medium">{v.nombre}</TableCell>
-                      <TableCell className="text-muted-foreground">{v.sku || "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{v.stock_actual || 0}</TableCell>
-                      <TableCell className="text-right tabular-nums">{v.stock_reservado || 0}</TableCell>
-                      <TableCell className={`text-right tabular-nums font-medium ${disponible <= 0 ? "text-red-600" : ""}`}>
+                      <TableCell className="text-stone-400">{v.sku || "—"}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{v.stock_actual || 0}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{v.stock_reservado || 0}</TableCell>
+                      <TableCell className={`text-right font-mono tabular-nums font-medium ${disponible <= 0 ? "text-red-600" : ""}`}>
                         {disponible}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-right font-mono tabular-nums">
                         {v.precio ? `$${Number(v.precio).toLocaleString("es-AR")}` : "—"}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-right font-mono tabular-nums">
                         {v.costo ? `$${Number(v.costo).toLocaleString("es-AR")}` : "—"}
                       </TableCell>
                       <TableCell>
@@ -153,12 +159,12 @@ export default async function ProductoDetailPage({
                               <div key={vt.tienda_id} className="flex items-center gap-1">
                                 <CanalBadge canal={vt.tienda?.canal} />
                                 {vt.stock_tn != null && (
-                                  <span className="text-xs text-muted-foreground">({vt.stock_tn})</span>
+                                  <span className="text-xs text-stone-400">({vt.stock_tn})</span>
                                 )}
                               </div>
                             ))
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-stone-400">—</span>
                           )}
                         </div>
                       </TableCell>
@@ -168,7 +174,7 @@ export default async function ProductoDetailPage({
               </TableBody>
             </Table>
           ) : (
-            <p className="text-center text-muted-foreground py-8">No hay variantes</p>
+            <p className="text-center text-stone-400 py-8">No hay variantes</p>
           )}
         </CardContent>
       </Card>
