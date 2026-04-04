@@ -121,6 +121,7 @@ export async function invitarUsuario(data: {
   const token = crypto.randomUUID().replace(/-/g, "")
   const fechaExpiracion = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
 
+  // Save invitation record
   const { data: invitacion, error } = await supabase
     .from("invitaciones")
     .insert({
@@ -137,6 +138,35 @@ export async function invitarUsuario(data: {
     .single()
 
   if (error) throw new Error(error.message)
+
+  // Send invite email via Supabase Auth admin API
+  try {
+    const { createClient: createAdminClient } = await import("@supabase/supabase-js")
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ser-os.vercel.app"
+
+    const { error: authError } = await adminSupabase.auth.admin.inviteUserByEmail(data.email, {
+      data: {
+        nombre: data.nombre,
+        rol: data.rol,
+        area: data.area,
+        invitacion_token: token,
+      },
+      redirectTo: `${appUrl}/login`,
+    })
+
+    if (authError) {
+      console.error("Error sending invite email:", authError.message)
+      // Don't throw — the invitation record was created, email just failed
+    }
+  } catch (err) {
+    console.error("Error with auth invite:", err)
+  }
+
   revalidatePath("/configuracion/usuarios")
   return invitacion
 }
