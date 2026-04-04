@@ -195,39 +195,14 @@ export async function crearPedido(input: CrearPedidoInput) {
   return pedido as any
 }
 
-export async function actualizarEstadoPedido(pedidoId: string, nuevoEstado: EstadoInterno) {
-  const supabase = await createClient()
-
-  const estadoPublico = ESTADO_INTERNO_A_PUBLICO[nuevoEstado]
-
-  const { error } = await supabase
-    .from("pedidos")
-    .update({
-      estado_interno: nuevoEstado,
-      estado_publico: estadoPublico,
-    })
-    .eq("id", pedidoId)
-
-  if (error) throw new Error(error.message)
-
-  // Si el estado es "sena_recibida" (habilitado), generar tareas
-  if (nuevoEstado === "sena_recibida") {
-    const { data: pedido } = await supabase
-      .from("pedidos")
-      .select("tipo")
-      .eq("id", pedidoId)
-      .single()
-
-    if (pedido) {
-      await supabase.rpc("generar_tareas_pedido", {
-        p_pedido_id: pedidoId,
-        p_tipo: pedido.tipo,
-      })
-    }
-  }
-
-  revalidatePath("/pedidos")
-  revalidatePath(`/pedidos/${pedidoId}`)
+export async function actualizarEstadoPedido(
+  pedidoId: string,
+  nuevoEstado: EstadoInterno | string,
+  datos?: { subestado?: string; motivo?: string; observaciones?: string }
+) {
+  const { ejecutarTransicion } = await import("@/lib/maquina-estados")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await ejecutarTransicion(pedidoId, nuevoEstado as string, datos as any)
 }
 
 export async function actualizarPedido(

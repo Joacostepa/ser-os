@@ -1,22 +1,28 @@
 import type { EstadoInterno, EstadoPublico } from "@/types/database"
 
-export const ESTADOS_INTERNOS: Record<EstadoInterno, { label: string; color: string; bgColor: string }> = {
-  nuevo: { label: "Nuevo", color: "#3B82F6", bgColor: "bg-blue-100 text-blue-800" },
-  pendiente_sena: { label: "Pendiente de seña", color: "#F59E0B", bgColor: "bg-amber-100 text-amber-800" },
-  sena_recibida: { label: "Seña recibida", color: "#2563EB", bgColor: "bg-blue-100 text-blue-700" },
-  en_prearmado: { label: "En pre-armado", color: "#2563EB", bgColor: "bg-blue-100 text-blue-700" },
-  esperando_insumos: { label: "Esperando insumos", color: "#F97316", bgColor: "bg-orange-100 text-orange-800" },
-  esperando_diseno: { label: "Esperando diseño", color: "#F97316", bgColor: "bg-orange-100 text-orange-800" },
-  insumos_recibidos: { label: "Insumos recibidos", color: "#22C55E", bgColor: "bg-green-100 text-green-800" },
-  listo_para_armar: { label: "Listo para armar", color: "#22C55E", bgColor: "bg-green-100 text-green-800" },
-  en_armado: { label: "En armado", color: "#16A34A", bgColor: "bg-green-200 text-green-900" },
-  armado_completo: { label: "Armado completo", color: "#16A34A", bgColor: "bg-green-200 text-green-900" },
-  pendiente_saldo: { label: "Pendiente de saldo", color: "#EF4444", bgColor: "bg-red-100 text-red-800" },
-  listo_para_despacho: { label: "Listo para despacho", color: "#8B5CF6", bgColor: "bg-violet-100 text-violet-800" },
-  en_preparacion_envio: { label: "En preparación de envío", color: "#8B5CF6", bgColor: "bg-violet-100 text-violet-800" },
-  despachado: { label: "Despachado", color: "#6B7280", bgColor: "bg-gray-100 text-gray-700" },
-  cerrado: { label: "Cerrado", color: "#374151", bgColor: "bg-gray-200 text-gray-800" },
-  cancelado: { label: "Cancelado", color: "#991B1B", bgColor: "bg-red-200 text-red-900" },
+export const ESTADOS_INTERNOS: Record<string, { label: string; color: string; bgColor: string }> = {
+  nuevo: { label: "Nuevo", color: "#3B82F6", bgColor: "bg-stone-100 text-stone-600" },
+  pendiente_sena: { label: "Pendiente de seña", color: "#F59E0B", bgColor: "bg-amber-50 text-amber-700" },
+  pendiente_de_sena: { label: "Pendiente de seña", color: "#F59E0B", bgColor: "bg-amber-50 text-amber-700" },
+  sena_recibida: { label: "Habilitado", color: "#2563EB", bgColor: "bg-blue-50 text-blue-700" },
+  habilitado: { label: "Habilitado", color: "#2563EB", bgColor: "bg-blue-50 text-blue-700" },
+  en_prearmado: { label: "En pre-armado", color: "#2563EB", bgColor: "bg-blue-50 text-blue-700" },
+  esperando_insumos: { label: "Esperando insumos", color: "#F97316", bgColor: "bg-amber-50 text-amber-700" },
+  esperando_diseno: { label: "Esperando diseño", color: "#F97316", bgColor: "bg-amber-50 text-amber-700" },
+  insumos_recibidos: { label: "Insumos recibidos", color: "#22C55E", bgColor: "bg-blue-50 text-blue-700" },
+  bloqueado: { label: "Bloqueado", color: "#EF4444", bgColor: "bg-red-50 text-red-700" },
+  listo_para_armar: { label: "Listo para armar", color: "#22C55E", bgColor: "bg-blue-50 text-blue-700" },
+  en_armado: { label: "En armado", color: "#8B5CF6", bgColor: "bg-violet-50 text-violet-700" },
+  armado_completo: { label: "Armado completo", color: "#8B5CF6", bgColor: "bg-violet-50 text-violet-700" },
+  pendiente_saldo: { label: "Pendiente de cobro", color: "#F59E0B", bgColor: "bg-amber-50 text-amber-700" },
+  pendiente_de_cobro: { label: "Pendiente de cobro", color: "#F59E0B", bgColor: "bg-amber-50 text-amber-700" },
+  listo_para_despacho: { label: "Listo para despachar", color: "#0D9488", bgColor: "bg-teal-50 text-teal-700" },
+  listo_para_despachar: { label: "Listo para despachar", color: "#0D9488", bgColor: "bg-teal-50 text-teal-700" },
+  en_preparacion_envio: { label: "En preparación", color: "#0D9488", bgColor: "bg-teal-50 text-teal-700" },
+  despachado: { label: "Despachado", color: "#16A34A", bgColor: "bg-green-50 text-green-700" },
+  entregado: { label: "Entregado", color: "#166534", bgColor: "bg-green-50 text-green-800" },
+  cerrado: { label: "Cerrado", color: "#78716C", bgColor: "bg-stone-100 text-stone-500" },
+  cancelado: { label: "Cancelado", color: "#B91C1C", bgColor: "bg-red-50 text-red-700" },
 }
 
 export const ESTADOS_PUBLICOS: Record<EstadoPublico, { label: string; orden: number }> = {
@@ -31,21 +37,27 @@ export const ESTADOS_PUBLICOS: Record<EstadoPublico, { label: string; orden: num
 }
 
 // Mapeo de estado interno → estado público
-export const ESTADO_INTERNO_A_PUBLICO: Record<EstadoInterno, EstadoPublico> = {
+export const ESTADO_INTERNO_A_PUBLICO: Record<string, EstadoPublico> = {
   nuevo: "recibido",
   pendiente_sena: "recibido",
+  pendiente_de_sena: "recibido",
   sena_recibida: "recibido",
+  habilitado: "recibido",
   en_prearmado: "en_produccion",
   esperando_insumos: "en_produccion",
   esperando_diseno: "en_diseno",
   insumos_recibidos: "en_produccion",
+  bloqueado: "en_produccion",
   listo_para_armar: "en_produccion",
   en_armado: "en_produccion",
   armado_completo: "en_preparacion",
   pendiente_saldo: "listo_pendiente_pago",
+  pendiente_de_cobro: "listo_pendiente_pago",
   listo_para_despacho: "listo_para_envio",
+  listo_para_despachar: "listo_para_envio",
   en_preparacion_envio: "listo_para_envio",
   despachado: "enviado",
+  entregado: "entregado",
   cerrado: "entregado",
   cancelado: "recibido",
 }
