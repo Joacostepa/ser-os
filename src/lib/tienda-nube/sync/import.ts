@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { createTNClientForTienda } from "../factory"
+import { ESTADO_INTERNO_A_PUBLICO } from "@/lib/constants"
+import type { EstadoInterno } from "@/types/database"
+import type { TNOrder } from "../types"
 
 function getAdminClient() {
   return createClient(
@@ -256,4 +259,218 @@ export async function importCustomers(tiendaId: string, jobId: string) {
       })
       .eq("id", jobId)
   }
+}
+
+export async function importOrders(tiendaId: string, jobId: string) {
+  const supabase = getAdminClient()
+  const { client, tienda } = await createTNClientForTienda(tiendaId)
+
+  await supabase
+    .from("sync_jobs")
+    .update({ status: "running", started_at: new Date().toISOString() })
+    .eq("id", jobId)
+
+  let processed = 0
+  const errors: string[] = []
+
+  try {
+    for await (const orders of client.getOrders()) {
+      for (const order of orders) {
+        try {
+          // Skip if already exists
+          const { data: existing } = await supabase
+            .from("pedidos")
+            .select("id")
+            .eq("tienda_nube_id", String(order.id))
+            .eq("tienda_id", tienda.id)
+            .single()
+
+          if (existing) {
+            processed++
+            continue
+          }
+
+          // Find or create customer
+          const clienteId = await findOrCreateClienteFromOrder(supabase, tienda, order)
+
+          const isPaid = order.payment_status === "paid"
+          const estadoInterno: EstadoInterno = order.status === "cancelled"
+            ? "cancelado"
+            : order.status === "closed"
+              ? "cerrado"
+              : isPaid ? "sena_recibida" : "nuevo"
+          const estadoPublico = ESTADO_INTERNO_A_PUBLICO[estadoInterno]
+
+          const montoTotal = parseFloat(order.total || "0")
+          const montoPagado = isPaid ? montoTotal : 0
+
+          const { data: pedido, error: pedidoError } = await supabase
+            .from("pedidos")
+            .insert({
+              numero_tn: String(order.number),
+              tienda_nube_id: String(order.id),
+              tienda_id: tienda.id,
+              cliente_id: clienteId,
+              tipo: "estandar",
+              estado_interno: estadoInterno,
+              estado_publico: estadoPublico,
+              prioridad: "normal",
+              monto_total: montoTotal,
+              monto_pagado: montoPagado,
+              tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
+              datos_envio: order.shipping_address,
+              observaciones: order.note || null,
+            })
+            .select()
+            .single()
+
+          if (pedidoError) throw pedidoError
+
+          // Create items
+          if (order.products?.length > 0) {
+            const items = []
+            for (const p of order.products) {
+              let producto_id: string | null = null
+              let variante_id: string | null = null
+
+              const { data: productoTienda } = await supabase
+                .from("productos_tienda")
+                .select("producto_id")
+                .eq("tienda_id", tienda.id)
+                .eq("tienda_nube_product_id", String(p.product_id))
+                .single()
+
+              if (productoTienda) producto_id = productoTienda.producto_id
+
+              if (p.variant_id) {
+                const { data: varianteTienda } = await supabase
+                  .from("variantes_tienda")
+                  .select("variante_id")
+                  .eq("tienda_id", tienda.id)
+                  .eq("tienda_nube_variant_id", String(p.variant_id))
+                  .single()
+
+                if (varianteTienda) variante_id = varianteTienda.variante_id
+              }
+
+              items.push({
+                pedido_id: pedido.id,
+                producto_id,
+                variante_id,
+                descripcion: p.name || "Producto",
+                cantidad: p.quantity || 1,
+                precio_unitario: parseFloat(p.price) || 0,
+              })
+            }
+
+            await supabase.from("items_pedido").insert(items)
+          }
+
+          await supabase.from("historial_pedido").insert({
+            pedido_id: pedido.id,
+            accion: `Pedido importado desde Tienda Nube (${tienda.canal})`,
+            estado_nuevo: estadoInterno,
+          })
+
+          processed++
+        } catch (err) {
+          errors.push(`Order ${order.id}: ${err instanceof Error ? err.message : "Error"}`)
+        }
+      }
+
+      await supabase
+        .from("sync_jobs")
+        .update({ processed_items: processed, errors })
+        .eq("id", jobId)
+    }
+
+    await supabase
+      .from("sync_jobs")
+      .update({
+        status: "completed",
+        processed_items: processed,
+        errors,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", jobId)
+
+    await supabase
+      .from("tiendas")
+      .update({ ultima_sincronizacion: new Date().toISOString() })
+      .eq("id", tiendaId)
+  } catch (err) {
+    await supabase
+      .from("sync_jobs")
+      .update({
+        status: "failed",
+        errors: [...errors, err instanceof Error ? err.message : "Fatal error"],
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", jobId)
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function findOrCreateClienteFromOrder(supabase: any, tienda: any, order: TNOrder): Promise<string> {
+  const email = order.contact_email || order.customer?.email
+  const nombre = order.contact_name || order.customer?.name || "Sin nombre"
+  const telefono = order.contact_phone || order.customer?.phone
+  const cuit = order.contact_identification || order.customer?.identification
+  const tnCustomerId = order.customer?.id ? String(order.customer.id) : null
+
+  let clienteId: string | null = null
+
+  if (email) {
+    const { data: existing } = await supabase
+      .from("clientes")
+      .select("id")
+      .eq("email", email)
+      .limit(1)
+      .single()
+
+    if (existing) clienteId = existing.id
+  }
+
+  if (!clienteId && tnCustomerId) {
+    const { data: junction } = await supabase
+      .from("clientes_tienda")
+      .select("cliente_id")
+      .eq("tienda_id", tienda.id)
+      .eq("tienda_nube_customer_id", tnCustomerId)
+      .single()
+
+    if (junction) clienteId = junction.cliente_id
+  }
+
+  if (!clienteId) {
+    const { data: newCliente, error } = await supabase
+      .from("clientes")
+      .insert({
+        nombre,
+        email: email || null,
+        telefono: telefono || null,
+        cuit: cuit || null,
+        categoria: "nuevo",
+      })
+      .select("id")
+      .single()
+
+    if (error) throw error
+    clienteId = newCliente.id
+  }
+
+  if (tnCustomerId) {
+    await supabase
+      .from("clientes_tienda")
+      .upsert(
+        {
+          cliente_id: clienteId,
+          tienda_id: tienda.id,
+          tienda_nube_customer_id: tnCustomerId,
+        },
+        { onConflict: "tienda_id,tienda_nube_customer_id" }
+      )
+  }
+
+  return clienteId!
 }

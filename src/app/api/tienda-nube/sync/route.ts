@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { after } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { importProducts, importCustomers } from "@/lib/tienda-nube/sync/import"
+import { importProducts, importCustomers, importOrders } from "@/lib/tienda-nube/sync/import"
 
 function getAdminClient() {
   return createClient(
@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!["products", "customers"].includes(type)) {
+    if (!["products", "customers", "pedidos"].includes(type)) {
       return NextResponse.json(
-        { error: "type debe ser 'products' o 'customers'" },
+        { error: "type debe ser 'products', 'customers' o 'pedidos'" },
         { status: 400 }
       )
     }
@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
         await importProducts(tienda_id, job.id)
       } else if (type === "customers") {
         await importCustomers(tienda_id, job.id)
+      } else if (type === "pedidos") {
+        await importOrders(tienda_id, job.id)
       }
     })
 

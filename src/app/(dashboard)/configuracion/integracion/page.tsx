@@ -145,7 +145,7 @@ export default function IntegracionPage() {
     }
   }
 
-  async function handleSync(tiendaId: string, type: "products" | "customers") {
+  async function handleSync(tiendaId: string, type: "products" | "customers" | "pedidos") {
     setSyncing(`${tiendaId}-${type}`)
     try {
       const res = await fetch("/api/tienda-nube/sync", {
@@ -346,6 +346,20 @@ export default function IntegracionPage() {
                       <Download className="h-4 w-4 mr-1" />
                     )}
                     Importar clientes
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSync(tienda.id, "pedidos")}
+                    disabled={syncing === `${tienda.id}-pedidos`}
+                  >
+                    {syncing === `${tienda.id}-pedidos` ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-1" />
+                    )}
+                    Importar pedidos
                   </Button>
                 </div>
               </CardContent>
