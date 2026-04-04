@@ -622,6 +622,35 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["pedido_ediciones"]["Row"], "id" | "created_at">
         Update: Partial<Database["public"]["Tables"]["pedido_ediciones"]["Insert"]>
       }
+      pedido_pasos: {
+        Row: {
+          id: string
+          pedido_id: string
+          titulo: string
+          completado: boolean
+          completado_por: string | null
+          completado_at: string | null
+          asignado_a: string | null
+          seccion: string | null
+          orden: number
+          notas: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["pedido_pasos"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["pedido_pasos"]["Insert"]>
+      }
+      checklist_templates: {
+        Row: {
+          id: string
+          tipo_pedido: string
+          nombre: string
+          pasos: Record<string, unknown>[]
+          activo: boolean
+          updated_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["checklist_templates"]["Row"], "id" | "updated_at">
+        Update: Partial<Database["public"]["Tables"]["checklist_templates"]["Insert"]>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

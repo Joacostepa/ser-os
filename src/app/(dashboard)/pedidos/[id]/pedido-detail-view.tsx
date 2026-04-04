@@ -14,19 +14,12 @@ import { CostCard } from "./components/cost-card"
 import { ShippingCard } from "./components/shipping-card"
 import { CommentsCard } from "./components/comments-card"
 import { ChangeStatusModal } from "./components/change-status-modal"
-import { TareasChecklist } from "@/components/tareas/tareas-checklist"
-import { DashboardCard } from "@/components/reportes/dashboard-card"
+import { PedidoChecklist } from "@/components/pedidos/pedido-checklist"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function PedidoDetailView({ pedido }: { pedido: any }) {
   const [statusModalOpen, setStatusModalOpen] = useState(false)
   const router = useRouter()
-
-  const tareasCompletadas = pedido.tareas?.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (t: any) => t.estado === "terminada"
-  ).length ?? 0
-  const tareasTotal = pedido.tareas?.length ?? 0
 
   return (
     <div className="space-y-5">
@@ -52,10 +45,8 @@ export function PedidoDetailView({ pedido }: { pedido: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
         {/* Columna izquierda — principal */}
         <div className="space-y-6">
-          {/* Tareas */}
-          <DashboardCard title={`Tareas del pedido`} description={`${tareasCompletadas}/${tareasTotal} completadas`}>
-            <TareasChecklist tareas={pedido.tareas || []} pedidoId={pedido.id} />
-          </DashboardCard>
+          {/* Checklist */}
+          <PedidoChecklist pedidoId={pedido.id} />
 
           {/* Productos */}
           <ProductsCard items={pedido.items || []} montoTotal={Number(pedido.monto_total)} />

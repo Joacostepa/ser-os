@@ -25,10 +25,8 @@ export async function ejecutarAccion(
         .single()
 
       if (pedido) {
-        await supabase.rpc("generar_tareas_pedido", {
-          p_pedido_id: pedidoId,
-          p_tipo: pedido.tipo,
-        })
+        const { crearChecklistPedido } = await import("@/lib/checklist/crear-checklist")
+        await crearChecklistPedido(pedidoId, pedido.tipo)
       }
       break
     }
@@ -41,10 +39,8 @@ export async function ejecutarAccion(
         .single()
 
       if (pedido) {
-        await supabase.rpc("generar_tareas_pedido", {
-          p_pedido_id: pedidoId,
-          p_tipo: pedido.tipo,
-        })
+        const { crearChecklistPedido } = await import("@/lib/checklist/crear-checklist")
+        await crearChecklistPedido(pedidoId, pedido.tipo)
       }
       break
     }
