@@ -18,6 +18,15 @@ export const pedidosColumns: ColumnDef<any>[] = [
     ),
   },
   {
+    accessorKey: "created_at",
+    header: "Fecha",
+    cell: ({ row }) => (
+      <span className="text-sm tabular-nums">
+        {format(new Date(row.original.created_at), "dd/MM/yyyy", { locale: es })}
+      </span>
+    ),
+  },
+  {
     accessorKey: "canal",
     header: "Canal",
     cell: ({ row }) => (

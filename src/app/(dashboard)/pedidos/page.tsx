@@ -37,7 +37,7 @@ export default function PedidosPage() {
           cliente:clientes(id, nombre, email, telefono),
           tienda:tiendas(id, nombre, canal)
         `)
-        .order("created_at", { ascending: false })
+        .order("numero_tn", { ascending: false, nullsFirst: false })
 
       if (estado && estado !== "todos") {
         query = query.eq("estado_interno", estado)
