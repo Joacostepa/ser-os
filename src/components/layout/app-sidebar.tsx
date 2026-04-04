@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Boxes,
   Zap,
+  Wallet,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { label: "Proveedores", href: "/proveedores", icon: Truck },
   { label: "Compras", href: "/compras", icon: ShoppingBag },
   { label: "Insumos", href: "/insumos", icon: Boxes },
+  { label: "Finanzas", href: "/finanzas", icon: Wallet },
 ]
 
 const CONFIG_ITEMS = [

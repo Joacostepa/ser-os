@@ -43,6 +43,9 @@ export type RubroProveedor = "textil" | "imprenta" | "confeccion" | "madera" | "
 export type TipoInsumo = "material" | "servicio"
 export type UnidadInsumo = "unidades" | "metros" | "kg" | "rollos" | "horas" | "ml" | "litros"
 export type ReferenciaMovimiento = "compra" | "pedido" | "ajuste_manual"
+export type TipoAsiento = "venta" | "cobro" | "compra" | "pago_proveedor" | "gasto" | "ajuste"
+export type TipoCuenta = "activo" | "pasivo" | "patrimonio" | "ingreso" | "costo" | "gasto"
+export type NaturalezaCuenta = "deudora" | "acreedora"
 
 export interface Database {
   public: {
@@ -400,6 +403,72 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["movimientos_stock"]["Row"], "id" | "created_at">
         Update: Partial<Database["public"]["Tables"]["movimientos_stock"]["Insert"]>
       }
+      cuentas: {
+        Row: {
+          id: number
+          codigo: string
+          nombre: string
+          tipo: TipoCuenta
+          naturaleza: NaturalezaCuenta
+          cuenta_padre_id: number | null
+          nivel: number
+          activa: boolean
+          descripcion: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["cuentas"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["cuentas"]["Insert"]>
+      }
+      asientos: {
+        Row: {
+          id: number
+          fecha: string
+          descripcion: string
+          tipo: TipoAsiento
+          referencia_tipo: string | null
+          referencia_id: string | null
+          usuario_id: string | null
+          anulado: boolean
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["asientos"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["asientos"]["Insert"]>
+      }
+      movimientos_contables: {
+        Row: {
+          id: number
+          asiento_id: number
+          cuenta_id: number
+          debe: number
+          haber: number
+          descripcion: string | null
+        }
+        Insert: Omit<Database["public"]["Tables"]["movimientos_contables"]["Row"], "id">
+        Update: Partial<Database["public"]["Tables"]["movimientos_contables"]["Insert"]>
+      }
+      gastos: {
+        Row: {
+          id: string
+          descripcion: string
+          cuenta_id: number
+          monto: number
+          fecha: string
+          pagado: boolean
+          fecha_pago: string | null
+          metodo_pago: string | null
+          recurrente: boolean
+          frecuencia: string | null
+          proximo_vencimiento: string | null
+          comprobante_url: string | null
+          observaciones: string | null
+          asiento_id: number | null
+          usuario_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["gastos"]["Row"], "id" | "created_at" | "updated_at">
+        Update: Partial<Database["public"]["Tables"]["gastos"]["Insert"]>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -423,6 +492,9 @@ export interface Database {
       unidad_insumo: UnidadInsumo
       tipo_movimiento_stock: TipoMovimientoStock
       referencia_movimiento: ReferenciaMovimiento
+      tipo_asiento: TipoAsiento
+      tipo_cuenta: TipoCuenta
+      naturaleza_cuenta: NaturalezaCuenta
     }
   }
 }

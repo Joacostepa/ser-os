@@ -20,6 +20,14 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   insumos: "Insumos",
   nuevo: "Nuevo",
   operaciones: "Operaciones",
+  finanzas: "Finanzas",
+  gastos: "Gastos",
+  "cuentas-a-cobrar": "Cuentas a cobrar",
+  "cuentas-a-pagar": "Cuentas a pagar",
+  "estado-de-resultados": "Estado de resultados",
+  "flujo-de-caja": "Flujo de caja",
+  "libro-diario": "Libro diario",
+  "plan-de-cuentas": "Plan de cuentas",
 }
 
 export function Header() {

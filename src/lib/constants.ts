@@ -117,6 +117,15 @@ export const TIPO_MOVIMIENTO_CONFIG = {
   devolucion: { label: "Devolución", color: "bg-blue-100 text-blue-800", sign: "+" },
 } as const
 
+export const TIPO_ASIENTO_CONFIG = {
+  venta: { label: "Venta", color: "bg-green-50 text-green-700" },
+  cobro: { label: "Cobro", color: "bg-blue-50 text-blue-700" },
+  compra: { label: "Compra", color: "bg-violet-50 text-violet-700" },
+  pago_proveedor: { label: "Pago proveedor", color: "bg-amber-50 text-amber-700" },
+  gasto: { label: "Gasto", color: "bg-red-50 text-red-700" },
+  ajuste: { label: "Ajuste", color: "bg-stone-100 text-stone-600" },
+} as const
+
 export const METODOS_PAGO = [
   "Transferencia bancaria",
   "MercadoPago",
