@@ -38,6 +38,8 @@ export type ConceptoPago = "sena" | "saldo" | "pago_total" | "gasto_operativo"
 export type TipoMovimientoStock = "entrada" | "salida" | "ajuste" | "devolucion"
 export type EstadoCompra = "borrador" | "enviada" | "confirmada" | "recibida_parcial" | "recibida" | "cancelada"
 export type TipoNotificacion = "interna" | "email_cliente" | "whatsapp"
+export type CalificacionProveedor = "excelente" | "bueno" | "regular" | "malo"
+export type RubroProveedor = "textil" | "imprenta" | "confeccion" | "madera" | "cuero" | "packaging" | "otro"
 
 export interface Database {
   public: {
@@ -261,6 +263,40 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["notificaciones"]["Row"], "id" | "created_at">
         Update: Partial<Database["public"]["Tables"]["notificaciones"]["Insert"]>
       }
+      proveedores: {
+        Row: {
+          id: string
+          nombre: string
+          contacto_principal: string | null
+          email: string | null
+          telefono: string | null
+          direccion: string | null
+          rubro: RubroProveedor
+          condiciones_pago: string | null
+          tiempo_entrega_dias: number | null
+          calificacion: CalificacionProveedor
+          notas: string | null
+          activo: boolean
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["proveedores"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["proveedores"]["Insert"]>
+      }
+      proveedores_productos: {
+        Row: {
+          id: string
+          proveedor_id: string
+          producto_id: string | null
+          descripcion: string
+          precio_referencia: number | null
+          moneda: string
+          ultima_compra: string | null
+          notas: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["proveedores_productos"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["proveedores_productos"]["Insert"]>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -277,6 +313,8 @@ export interface Database {
       tipo_pago: TipoPago
       concepto_pago: ConceptoPago
       tipo_notificacion: TipoNotificacion
+      calificacion_proveedor: CalificacionProveedor
+      rubro_proveedor: RubroProveedor
     }
   }
 }

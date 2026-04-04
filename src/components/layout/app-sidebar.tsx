@@ -12,6 +12,7 @@ import {
   Settings,
   PackageOpen,
   LogOut,
+  Truck,
 } from "lucide-react"
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { label: "Productos", href: "/productos", icon: Package },
   { label: "Clientes", href: "/clientes", icon: Users },
   { label: "Pagos", href: "/pagos", icon: CreditCard },
+  { label: "Proveedores", href: "/proveedores", icon: Truck },
 ]
 
 const CONFIG_ITEMS = [

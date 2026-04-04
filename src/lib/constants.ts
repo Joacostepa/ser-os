@@ -69,6 +69,23 @@ export const PRIORIDAD_CONFIG = {
   baja: { label: "Baja", color: "bg-gray-100 text-gray-600", dotColor: "bg-gray-400" },
 } as const
 
+export const CALIFICACION_PROVEEDOR_CONFIG = {
+  excelente: { label: "Excelente", color: "bg-green-100 text-green-800" },
+  bueno: { label: "Bueno", color: "bg-blue-100 text-blue-800" },
+  regular: { label: "Regular", color: "bg-amber-100 text-amber-800" },
+  malo: { label: "Malo", color: "bg-red-100 text-red-800" },
+} as const
+
+export const RUBRO_PROVEEDOR_CONFIG = {
+  textil: { label: "Textil", color: "bg-indigo-100 text-indigo-800" },
+  imprenta: { label: "Imprenta", color: "bg-cyan-100 text-cyan-800" },
+  confeccion: { label: "Confección", color: "bg-pink-100 text-pink-800" },
+  madera: { label: "Madera", color: "bg-amber-100 text-amber-800" },
+  cuero: { label: "Cuero", color: "bg-orange-100 text-orange-800" },
+  packaging: { label: "Packaging", color: "bg-teal-100 text-teal-800" },
+  otro: { label: "Otro", color: "bg-gray-100 text-gray-600" },
+} as const
+
 export const METODOS_PAGO = [
   "Transferencia bancaria",
   "MercadoPago",
