@@ -66,6 +66,7 @@ export async function getPedidosKanban() {
 export async function getPedido(id: string) {
   const supabase = await createClient()
 
+  // Main query with direct FK joins only
   const { data, error } = await supabase
     .from("pedidos")
     .select(`
@@ -81,23 +82,39 @@ export async function getPedido(id: string) {
         responsable:usuarios(id, nombre, rol),
         subtareas(*)
       ),
-      pagos(*),
-      historial:historial_pedido(
-        *,
-        usuario:usuarios(id, nombre)
-      ),
-      comentarios(
-        *,
-        usuario:usuarios(id, nombre, avatar_url)
-      ),
-      archivos(*)
+      pagos(*)
     `)
     .eq("id", id)
     .single()
 
   if (error) throw new Error(error.message)
 
-  // Fetch tienda separately (nullable FK join can cause issues)
+  // Fetch polymorphic relations separately
+  const [
+    { data: historial },
+    { data: comentarios },
+    { data: archivos },
+  ] = await Promise.all([
+    supabase
+      .from("historial_pedido")
+      .select("*, usuario:usuarios(id, nombre)")
+      .eq("pedido_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("comentarios")
+      .select("*, usuario:usuarios(id, nombre, avatar_url)")
+      .eq("entidad_tipo", "pedido")
+      .eq("entidad_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("archivos")
+      .select("*")
+      .eq("entidad_tipo", "pedido")
+      .eq("entidad_id", id)
+      .order("created_at", { ascending: false }),
+  ])
+
+  // Fetch tienda separately (nullable FK)
   let tienda = null
   if (data.tienda_id) {
     const { data: t } = await supabase
@@ -109,7 +126,7 @@ export async function getPedido(id: string) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { ...data, tienda } as any
+  return { ...data, historial, comentarios, archivos, tienda } as any
 }
 
 export async function crearPedido(input: CrearPedidoInput) {
