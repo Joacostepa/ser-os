@@ -183,8 +183,13 @@ export interface Database {
           completada_por: string | null
           completada_en: string | null
           created_at: string
+          fase: string | null
+          prioridad: string
+          creado_por: string | null
+          fecha_inicio: string | null
+          updated_at: string | null
         }
-        Insert: Omit<Database["public"]["Tables"]["tareas"]["Row"], "id" | "created_at">
+        Insert: Omit<Database["public"]["Tables"]["tareas"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Database["public"]["Tables"]["tareas"]["Insert"]>
       }
       subtareas: {
