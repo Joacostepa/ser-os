@@ -23,6 +23,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { MENU_POR_ROL } from "@/lib/auth/permisos"
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -178,6 +179,14 @@ export function AppSidebar({
       .toUpperCase()
       .slice(0, 2) ?? "?"
 
+  const userRol = user?.rol || "lectura"
+  const allowedLabels = MENU_POR_ROL[userRol] || []
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => userRol === "admin" || allowedLabels.includes(item.label)
+  )
+  const showConfig =
+    userRol === "admin" || allowedLabels.includes("Configuracion")
+
   const sidebarContent = (isMobile: boolean) => {
     const effectiveCollapsed = isMobile ? false : collapsed
 
@@ -237,7 +246,7 @@ export function AppSidebar({
             </p>
           )}
           <ul className="space-y-0.5">
-            {NAV_ITEMS.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavItem
                 key={item.href}
                 item={item}
@@ -249,7 +258,7 @@ export function AppSidebar({
             ))}
           </ul>
 
-          {user?.rol === "admin" && (
+          {showConfig && (
             <>
               {!effectiveCollapsed && (
                 <p

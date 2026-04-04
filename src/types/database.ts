@@ -36,7 +36,7 @@ export type TipoPedido = "sin_clasificar" | "logo_ser" | "marca_blanca" | "perso
 export type Prioridad = "urgente" | "normal" | "baja"
 export type TipoDespacho = "envio" | "retiro_oficina"
 export type CategoriaCliente = "nuevo" | "recurrente" | "vip"
-export type RolUsuario = "admin" | "operaciones" | "diseno" | "armado" | "logistica" | "contabilidad"
+export type RolUsuario = "admin" | "operaciones" | "diseno" | "armado" | "logistica" | "contable" | "lectura"
 export type EstadoTarea = "pendiente" | "en_proceso" | "terminada" | "bloqueada"
 export type AreaTarea = "diseno" | "operaciones" | "armado" | "logistica" | "admin"
 export type TipoPago = "cobro" | "pago_proveedor" | "gasto"
@@ -59,15 +59,37 @@ export interface Database {
       usuarios: {
         Row: {
           id: string
+          auth_id: string | null
           nombre: string
+          apellido: string | null
           email: string
+          telefono: string | null
           rol: RolUsuario
+          area: string | null
           activo: boolean
           avatar_url: string | null
+          ultimo_acceso: string | null
+          invitado_por: string | null
+          fecha_invitacion: string | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: Omit<Database["public"]["Tables"]["usuarios"]["Row"], "id" | "created_at" | "updated_at">
+        Update: Partial<Database["public"]["Tables"]["usuarios"]["Insert"]>
+      }
+      invitaciones: {
+        Row: {
+          id: string
+          email: string
+          nombre: string
+          rol: string
+          area: string | null
+          estado: "pendiente" | "aceptada" | "cancelada"
+          invitado_por: string
           created_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["usuarios"]["Row"], "id" | "created_at">
-        Update: Partial<Database["public"]["Tables"]["usuarios"]["Insert"]>
+        Insert: Omit<Database["public"]["Tables"]["invitaciones"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["invitaciones"]["Insert"]>
       }
       clientes: {
         Row: {
