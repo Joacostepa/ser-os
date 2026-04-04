@@ -87,7 +87,10 @@ export async function getPedido(id: string) {
     .eq("id", id)
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error("getPedido error:", error.message, error.details, error.hint)
+    throw new Error(error.message)
+  }
 
   // Fetch polymorphic relations separately
   const [
