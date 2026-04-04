@@ -16,6 +16,7 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { RecetaEditor } from "./receta-editor"
 import { CostoCard } from "./costo-card"
+import { calcularNeto } from "@/lib/iva"
 
 export default async function ProductoDetailPage({
   params,
@@ -82,6 +83,11 @@ export default async function ProductoDetailPage({
                 ? `$${Number(producto.precio_mayorista).toLocaleString("es-AR")}`
                 : "—"}
             </p>
+            {producto.precio_mayorista && (
+              <p className="text-xs text-stone-400 mt-0.5">
+                Neto s/IVA: ${(producto.precio_neto ?? calcularNeto(Number(producto.precio_mayorista))).toLocaleString("es-AR")}
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -91,6 +97,7 @@ export default async function ProductoDetailPage({
           costoReceta={costoReceta}
           tieneReceta={tieneReceta}
           precioMayorista={producto.precio_mayorista}
+          precioNeto={producto.precio_neto ?? (producto.precio_mayorista ? calcularNeto(Number(producto.precio_mayorista)) : null)}
         />
 
         <Card>
@@ -183,6 +190,7 @@ export default async function ProductoDetailPage({
         productoId={producto.id}
         productoNombre={producto.nombre}
         precioMayorista={producto.precio_mayorista}
+        precioNeto={producto.precio_neto ?? (producto.precio_mayorista ? calcularNeto(Number(producto.precio_mayorista)) : null)}
         recetaActual={receta}
       />
     </div>

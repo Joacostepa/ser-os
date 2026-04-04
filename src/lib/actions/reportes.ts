@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { calcularNeto } from "@/lib/iva"
 
 // ============================================================
 // GENERAL TAB
@@ -12,13 +13,13 @@ export async function getResumenGeneral(desde: string, hasta: string, desdeAnter
   const [{ data: pedidos }, { data: pedidosAnterior }, { data: pedidosActivos }] = await Promise.all([
     supabase
       .from("pedidos")
-      .select("monto_total, monto_total_usd, saldo_pendiente, estado_interno")
+      .select("monto_total, monto_neto, monto_total_usd, saldo_pendiente, estado_interno")
       .gte("fecha_ingreso", desde)
       .lte("fecha_ingreso", hasta)
       .not("estado_interno", "eq", "cancelado"),
     supabase
       .from("pedidos")
-      .select("monto_total")
+      .select("monto_total, monto_neto")
       .gte("fecha_ingreso", desdeAnterior)
       .lt("fecha_ingreso", desde)
       .not("estado_interno", "eq", "cancelado"),
@@ -28,9 +29,9 @@ export async function getResumenGeneral(desde: string, hasta: string, desdeAnter
       .not("estado_interno", "in", '("cerrado","cancelado")'),
   ])
 
-  const facturacion = pedidos?.reduce((s, p) => s + Number(p.monto_total), 0) ?? 0
+  const facturacion = pedidos?.reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0
   const facturacionUsd = pedidos?.reduce((s, p) => s + Number(p.monto_total_usd || 0), 0) ?? 0
-  const facturacionAnterior = pedidosAnterior?.reduce((s, p) => s + Number(p.monto_total), 0) ?? 0
+  const facturacionAnterior = pedidosAnterior?.reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0
   const totalPedidos = pedidos?.length ?? 0
   const ticketPromedio = totalPedidos > 0 ? facturacion / totalPedidos : 0
 
@@ -183,16 +184,16 @@ export async function getMetricasComerciales(desde: string, hasta: string, desde
   const supabase = await createClient()
 
   const [{ data: pedidos }, { data: pedidosAnt }, { data: clientesNuevos }] = await Promise.all([
-    supabase.from("pedidos").select("monto_total, cliente_id, tipo")
+    supabase.from("pedidos").select("monto_total, monto_neto, cliente_id, tipo")
       .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta).not("estado_interno", "eq", "cancelado"),
-    supabase.from("pedidos").select("monto_total")
+    supabase.from("pedidos").select("monto_total, monto_neto")
       .gte("fecha_ingreso", desdeAnterior).lt("fecha_ingreso", desde).not("estado_interno", "eq", "cancelado"),
     // Clientes cuyo primer pedido es en este período
     supabase.from("clientes").select("id").gte("created_at", desde).lte("created_at", hasta),
   ])
 
-  const ventas = pedidos?.reduce((s, p) => s + Number(p.monto_total), 0) ?? 0
-  const ventasAnt = pedidosAnt?.reduce((s, p) => s + Number(p.monto_total), 0) ?? 0
+  const ventas = pedidos?.reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0
+  const ventasAnt = pedidosAnt?.reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0
   const totalPedidos = pedidos?.length ?? 0
   const clientesActivos = new Set(pedidos?.map((p) => p.cliente_id)).size
   const estandar = pedidos?.filter((p) => p.tipo === "estandar").length ?? 0
@@ -203,8 +204,8 @@ export async function getMetricasComerciales(desde: string, hasta: string, desde
     ticketPromedio: totalPedidos > 0 ? ventas / totalPedidos : 0,
     clientesActivos, clientesNuevos: clientesNuevos?.length ?? 0,
     distribucion: [
-      { name: "Estándar", value: estandar, monto: pedidos?.filter((p) => p.tipo === "estandar").reduce((s, p) => s + Number(p.monto_total), 0) ?? 0 },
-      { name: "Personalizado", value: personalizado, monto: pedidos?.filter((p) => p.tipo === "personalizado").reduce((s, p) => s + Number(p.monto_total), 0) ?? 0 },
+      { name: "Estándar", value: estandar, monto: pedidos?.filter((p) => p.tipo === "estandar").reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0 },
+      { name: "Personalizado", value: personalizado, monto: pedidos?.filter((p) => p.tipo === "personalizado").reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0 },
     ],
   }
 }
@@ -261,7 +262,7 @@ export async function getEvolucionMensual(meses: number = 6) {
 
   const { data: pedidos } = await supabase
     .from("pedidos")
-    .select("monto_total, monto_total_usd, fecha_ingreso")
+    .select("monto_total, monto_neto, monto_total_usd, fecha_ingreso")
     .gte("fecha_ingreso", desde.toISOString())
     .not("estado_interno", "eq", "cancelado")
 
@@ -278,7 +279,7 @@ export async function getEvolucionMensual(meses: number = 6) {
     const date = new Date(p.fecha_ingreso)
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
     if (mesesMap[key]) {
-      mesesMap[key].facturacion += Number(p.monto_total)
+      mesesMap[key].facturacion += Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))
       mesesMap[key].usd += Number(p.monto_total_usd || 0)
       mesesMap[key].pedidos++
     }
@@ -338,7 +339,7 @@ export async function getRentabilidadPorPedido(desde: string, hasta: string) {
 
   const { data } = await supabase
     .from("pedidos")
-    .select("id, numero_tn, monto_total, monto_total_usd, cliente:clientes(nombre), items:items_pedido(cantidad, costo_unitario)")
+    .select("id, numero_tn, monto_total, monto_neto, monto_total_usd, cliente:clientes(nombre), items:items_pedido(cantidad, costo_unitario)")
     .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
     .not("estado_interno", "eq", "cancelado")
     .order("monto_total", { ascending: false }).limit(50)
@@ -347,7 +348,7 @@ export async function getRentabilidadPorPedido(desde: string, hasta: string) {
   return (data || []).map((p: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const costo = p.items?.reduce((s: number, i: any) => s + (Number(i.costo_unitario || 0) * Number(i.cantidad)), 0) ?? 0
-    const monto = Number(p.monto_total)
+    const monto = Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))
     const margen = monto - costo
     return {
       id: p.id, numero_tn: p.numero_tn, cliente: p.cliente?.nombre || "—",
@@ -362,7 +363,7 @@ export async function getRentabilidadPorCliente(desde: string, hasta: string) {
 
   const { data } = await supabase
     .from("pedidos")
-    .select("monto_total, cliente:clientes(id, nombre, categoria), items:items_pedido(cantidad, costo_unitario)")
+    .select("monto_total, monto_neto, cliente:clientes(id, nombre, categoria), items:items_pedido(cantidad, costo_unitario)")
     .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
     .not("estado_interno", "eq", "cancelado")
 
@@ -372,7 +373,7 @@ export async function getRentabilidadPorCliente(desde: string, hasta: string) {
     const cId = p.cliente?.id
     if (!cId) return
     if (!map[cId]) map[cId] = { id: cId, nombre: p.cliente.nombre, categoria: p.cliente.categoria, facturado: 0, costo: 0, pedidos: 0 }
-    map[cId].facturado += Number(p.monto_total)
+    map[cId].facturado += Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map[cId].costo += p.items?.reduce((s: number, i: any) => s + (Number(i.costo_unitario || 0) * Number(i.cantidad)), 0) ?? 0
     map[cId].pedidos++
@@ -388,7 +389,7 @@ export async function getEstadoResultados(desde: string, hasta: string) {
 
   const { data: pedidos } = await supabase
     .from("pedidos")
-    .select("monto_total, items:items_pedido(cantidad, costo_unitario)")
+    .select("monto_total, monto_neto, items:items_pedido(cantidad, costo_unitario)")
     .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
     .not("estado_interno", "eq", "cancelado")
 
@@ -404,7 +405,7 @@ export async function getEstadoResultados(desde: string, hasta: string) {
     .eq("tipo", "pago_proveedor")
     .gte("fecha", desde.split("T")[0]).lte("fecha", hasta.split("T")[0])
 
-  const ventasBrutas = pedidos?.reduce((s, p) => s + Number(p.monto_total), 0) ?? 0
+  const ventasBrutas = pedidos?.reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cmv = pedidos?.reduce((s, p: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

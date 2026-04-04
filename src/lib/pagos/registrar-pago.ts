@@ -6,6 +6,7 @@ import { ejecutarTransicion } from "@/lib/maquina-estados"
 import { revalidatePath } from "next/cache"
 import type { PagoInput } from "./tipos"
 import { getSaldoPendiente, generarNumeroRecibo, conceptoPorTipo } from "./helpers"
+import { descomponerIVA } from "@/lib/iva"
 
 /**
  * Central function to register a payment for a pedido.
@@ -112,7 +113,8 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
         .limit(1)
 
       if (!existingAsiento || existingAsiento.length === 0) {
-        // Create venta asiento: Deudores por ventas (1.1.2) debe / Ventas (4.1.1) haber
+        // Create venta asiento with IVA separation
+        const { neto, iva } = descomponerIVA(montoTotal)
         asientoVentaId = await crearAsiento({
           fecha: input.fecha,
           descripcion: `Venta pedido #${numeroPedido} - ${clienteNombre}`,
@@ -120,8 +122,9 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
           referencia_tipo: "pedido",
           referencia_id: input.pedido_id,
           lineas: [
-            { cuenta_codigo: "1.1.2", debe: montoTotal, haber: 0, descripcion: `Venta pedido #${numeroPedido}` },
-            { cuenta_codigo: "4.1.1", debe: 0, haber: montoTotal, descripcion: `Venta pedido #${numeroPedido}` },
+            { cuenta_codigo: "1.1.2", debe: montoTotal, haber: 0, descripcion: "Cuentas a Cobrar" },
+            { cuenta_codigo: "4.1.1", debe: 0, haber: neto, descripcion: "Ventas Mayoristas (neto)" },
+            { cuenta_codigo: "2.1.4", debe: 0, haber: iva, descripcion: "IVA Débito Fiscal" },
           ],
         })
 

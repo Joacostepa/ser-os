@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { onGastoRegistrado, onGastoPagado } from "@/lib/contable/hooks-contables"
+import { calcularNeto } from "@/lib/iva"
 
 // ============================================================
 // DASHBOARD
@@ -67,12 +68,12 @@ export async function getDashboardFinanciero(desde: string, hasta: string) {
   // Ventas del período
   const { data: ventas } = await supabase
     .from("pedidos")
-    .select("monto_total, items:items_pedido(cantidad, costo_unitario)")
+    .select("monto_total, monto_neto, items:items_pedido(cantidad, costo_unitario)")
     .gte("fecha_ingreso", desde)
     .lte("fecha_ingreso", hasta)
     .not("estado_interno", "eq", "cancelado")
 
-  const ventasNetas = ventas?.reduce((s, p) => s + Number(p.monto_total), 0) ?? 0
+  const ventasNetas = ventas?.reduce((s, p) => s + (Number(p.monto_neto || 0) || calcularNeto(Number(p.monto_total))), 0) ?? 0
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cmv = ventas?.reduce((s, p: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

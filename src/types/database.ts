@@ -95,6 +95,8 @@ export interface Database {
           tipo: "estandar" | "personalizable"
           costo_base: number | null
           precio_mayorista: number | null
+          precio_neto: number | null
+          tasa_iva: number
           stock_minimo: number
           activo: boolean
           created_at: string
@@ -130,6 +132,8 @@ export interface Database {
           fecha_ingreso: string
           fecha_comprometida: string | null
           monto_total: number
+          monto_neto: number | null
+          monto_iva: number | null
           monto_pagado: number
           saldo_pendiente: number
           tipo_despacho: TipoDespacho | null
@@ -154,6 +158,8 @@ export interface Database {
           descripcion: string
           cantidad: number
           precio_unitario: number
+          precio_neto: number | null
+          iva_unitario: number | null
           costo_unitario: number | null
           subtotal: number
           personalizacion: Record<string, unknown> | null

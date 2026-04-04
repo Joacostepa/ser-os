@@ -2,6 +2,7 @@ import type { WebhookContext } from "./index"
 import { ESTADO_INTERNO_A_PUBLICO } from "@/lib/constants"
 import type { EstadoInterno } from "@/types/database"
 import { getCotizacionVenta } from "@/lib/dolar-api"
+import { calcularNeto, calcularIVA } from "@/lib/iva"
 
 export async function handleOrderCreated(ctx: WebhookContext) {
   const { client, supabase, tienda, resourceId } = ctx
@@ -55,6 +56,8 @@ export async function handleOrderCreated(ctx: WebhookContext) {
       estado_publico: estadoPublico,
       prioridad: "normal",
       monto_total: montoTotal,
+      monto_neto: calcularNeto(montoTotal),
+      monto_iva: calcularIVA(montoTotal),
       monto_pagado: montoPagado,
       fecha_ingreso: order.created_at,
       tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
@@ -76,6 +79,8 @@ export async function handleOrderCreated(ctx: WebhookContext) {
       descripcion: p.name || "Producto",
       cantidad: p.quantity || 1,
       precio_unitario: parseFloat(p.price) || 0,
+      precio_neto: calcularNeto(parseFloat(p.price) || 0),
+      iva_unitario: calcularIVA(parseFloat(p.price) || 0),
       producto_id: null as string | null,
       variante_id: null as string | null,
     }))

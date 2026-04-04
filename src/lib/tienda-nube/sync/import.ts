@@ -3,6 +3,7 @@ import { createTNClientForTienda } from "../factory"
 import { ESTADO_INTERNO_A_PUBLICO } from "@/lib/constants"
 import type { EstadoInterno } from "@/types/database"
 import type { TNOrder } from "../types"
+import { calcularNeto, calcularIVA } from "@/lib/iva"
 
 function getAdminClient() {
   return createClient(
@@ -48,6 +49,7 @@ export async function importProducts(tiendaId: string, jobId: string) {
               .update({ nombre, activo: product.published })
               .eq("id", productoId)
           } else {
+            const precioMayorista = firstVariant?.price ? parseFloat(firstVariant.price) : null
             const { data: newProd, error } = await supabase
               .from("productos")
               .insert({
@@ -55,7 +57,8 @@ export async function importProducts(tiendaId: string, jobId: string) {
                 sku: firstVariant?.sku || null,
                 tipo: "estandar",
                 costo_base: firstVariant?.cost ? parseFloat(firstVariant.cost) : null,
-                precio_mayorista: firstVariant?.price ? parseFloat(firstVariant.price) : null,
+                precio_mayorista: precioMayorista,
+                precio_neto: precioMayorista != null ? calcularNeto(precioMayorista) : null,
                 stock_minimo: 0,
                 activo: product.published,
               })
@@ -321,6 +324,8 @@ export async function importOrders(tiendaId: string, jobId: string) {
               estado_publico: estadoPublico,
               prioridad: "normal",
               monto_total: montoTotal,
+              monto_neto: calcularNeto(montoTotal),
+              monto_iva: calcularIVA(montoTotal),
               monto_pagado: montoPagado,
               fecha_ingreso: order.created_at,
               tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
@@ -366,6 +371,8 @@ export async function importOrders(tiendaId: string, jobId: string) {
                 descripcion: p.name || "Producto",
                 cantidad: p.quantity || 1,
                 precio_unitario: parseFloat(p.price) || 0,
+                precio_neto: calcularNeto(parseFloat(p.price) || 0),
+                iva_unitario: calcularIVA(parseFloat(p.price) || 0),
               })
             }
 

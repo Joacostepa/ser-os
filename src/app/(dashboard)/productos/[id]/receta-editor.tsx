@@ -47,11 +47,13 @@ export function RecetaEditor({
   productoId,
   productoNombre,
   precioMayorista,
+  precioNeto,
   recetaActual,
 }: {
   productoId: string
   productoNombre: string
   precioMayorista?: number | null
+  precioNeto?: number | null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recetaActual: any | null
 }) {
@@ -137,9 +139,11 @@ export function RecetaEditor({
   }
 
   const costoTotal = items.reduce((sum, i) => sum + (i.cantidad * costoEfectivo(i)), 0)
+  const neto = Number(precioNeto || 0)
   const precio = Number(precioMayorista || 0)
-  const margen = precio - costoTotal
-  const margenPct = precio > 0 ? (margen / precio) * 100 : 0
+  const precioMargen = neto > 0 ? neto : precio
+  const margen = precioMargen - costoTotal
+  const margenPct = precioMargen > 0 ? (margen / precioMargen) * 100 : 0
 
   // View mode
   if (!editing) {
@@ -209,14 +213,14 @@ export function RecetaEditor({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-stone-500">Precio de venta</p>
+                    <p className="text-xs text-stone-500">Precio neto s/IVA</p>
                     <p className="text-lg font-mono font-medium text-stone-900">
-                      {precio > 0 ? `$${precio.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : "—"}
+                      {precioMargen > 0 ? `$${precioMargen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : "—"}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-stone-500">Margen bruto</p>
-                    {precio > 0 ? (
+                    {precioMargen > 0 ? (
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-mono font-medium text-stone-900">
                           ${margen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
@@ -361,14 +365,14 @@ export function RecetaEditor({
               </p>
             </div>
             <div>
-              <p className="text-xs text-stone-500">Precio de venta</p>
+              <p className="text-xs text-stone-500">Precio neto s/IVA</p>
               <p className="text-lg font-mono font-medium text-stone-900">
-                {precio > 0 ? `$${precio.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : "—"}
+                {precioMargen > 0 ? `$${precioMargen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : "—"}
               </p>
             </div>
             <div>
               <p className="text-xs text-stone-500">Margen bruto</p>
-              {precio > 0 ? (
+              {precioMargen > 0 ? (
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-mono font-medium text-stone-900">
                     ${margen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}

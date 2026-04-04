@@ -16,12 +16,14 @@ export function CostoCard({
   costoReceta,
   tieneReceta,
   precioMayorista,
+  precioNeto,
 }: {
   productoId: string
   costoBase: number | null
   costoReceta: number
   tieneReceta: boolean
   precioMayorista: number | null
+  precioNeto: number | null
 }) {
   const [editing, setEditing] = useState(false)
   const [valor, setValor] = useState(costoBase || 0)
@@ -30,9 +32,10 @@ export function CostoCard({
 
   const costoEfectivo = tieneReceta ? costoReceta : (costoBase || 0)
   const fuente = tieneReceta ? "receta" : costoBase ? "compra" : null
+  const neto = Number(precioNeto || 0)
   const precio = Number(precioMayorista || 0)
-  const margen = precio - costoEfectivo
-  const margenPct = precio > 0 ? (margen / precio) * 100 : 0
+  const margen = neto > 0 ? neto - costoEfectivo : precio - costoEfectivo
+  const margenPct = neto > 0 ? (margen / neto) * 100 : precio > 0 ? (margen / precio) * 100 : 0
 
   async function handleSave() {
     setSaving(true)
@@ -97,9 +100,9 @@ export function CostoCard({
         )}
 
         {/* Margin display */}
-        {costoEfectivo > 0 && precio > 0 && !editing && (
+        {costoEfectivo > 0 && (neto > 0 || precio > 0) && !editing && (
           <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="text-xs text-stone-500">Margen:</span>
+            <span className="text-xs text-stone-500">Margen s/IVA:</span>
             <span className="text-xs font-mono text-stone-700">
               ${margen.toLocaleString("es-AR")}
             </span>
