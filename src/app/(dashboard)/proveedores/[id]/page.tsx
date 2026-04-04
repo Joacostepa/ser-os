@@ -11,11 +11,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ArrowLeft, Mail, Phone, MapPin, Clock, Star } from "lucide-react"
-import { CALIFICACION_PROVEEDOR_CONFIG, RUBRO_PROVEEDOR_CONFIG } from "@/lib/constants"
+import { CALIFICACION_PROVEEDOR_CONFIG, RUBRO_PROVEEDOR_CONFIG, ESTADO_COMPRA_CONFIG } from "@/lib/constants"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import Link from "next/link"
-import type { CalificacionProveedor, RubroProveedor } from "@/types/database"
+import type { CalificacionProveedor, EstadoCompra, RubroProveedor } from "@/types/database"
 
 export default async function ProveedorDetailPage({
   params,
@@ -180,6 +180,66 @@ export default async function ProveedorDetailPage({
             </Table>
           ) : (
             <p className="text-center text-muted-foreground py-4">No hay productos registrados</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Órdenes de compra</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {proveedor.compras?.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Pedido</TableHead>
+                  <TableHead>Fecha pedido</TableHead>
+                  <TableHead>Entrega esperada</TableHead>
+                  <TableHead>Items</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {proveedor.compras.map((compra: any) => {
+                  const estadoConfig = ESTADO_COMPRA_CONFIG[compra.estado as EstadoCompra]
+                  return (
+                    <TableRow key={compra.id}>
+                      <TableCell>
+                        <Link href={`/compras/${compra.id}`} className="font-medium font-mono hover:underline">
+                          {compra.id.slice(0, 8)}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={estadoConfig?.color}>
+                          {estadoConfig?.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {compra.pedido ? (
+                          <Link href={`/pedidos/${compra.pedido.id}`} className="hover:underline text-blue-600">
+                            #{compra.pedido.numero_tn || compra.pedido.id.slice(0, 8)}
+                          </Link>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(compra.fecha_pedido), "dd/MM/yyyy", { locale: es })}
+                      </TableCell>
+                      <TableCell>
+                        {compra.fecha_esperada
+                          ? format(new Date(compra.fecha_esperada), "dd/MM/yyyy", { locale: es })
+                          : "—"}
+                      </TableCell>
+                      <TableCell>{compra.items?.[0]?.count ?? 0}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">No hay compras registradas</p>
           )}
         </CardContent>
       </Card>

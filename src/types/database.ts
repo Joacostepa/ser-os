@@ -297,6 +297,38 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["proveedores_productos"]["Row"], "id" | "created_at">
         Update: Partial<Database["public"]["Tables"]["proveedores_productos"]["Insert"]>
       }
+      compras: {
+        Row: {
+          id: string
+          proveedor_id: string
+          pedido_id: string | null
+          estado: EstadoCompra
+          fecha_pedido: string
+          fecha_esperada: string | null
+          fecha_recibida: string | null
+          notas: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["compras"]["Row"], "id" | "created_at" | "updated_at">
+        Update: Partial<Database["public"]["Tables"]["compras"]["Insert"]>
+      }
+      items_compra: {
+        Row: {
+          id: string
+          compra_id: string
+          producto_id: string | null
+          descripcion: string
+          cantidad: number
+          precio_unitario: number
+          cantidad_recibida: number
+          subtotal: number
+          notas: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["items_compra"]["Row"], "id" | "created_at" | "subtotal">
+        Update: Partial<Database["public"]["Tables"]["items_compra"]["Insert"]>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -315,6 +347,7 @@ export interface Database {
       tipo_notificacion: TipoNotificacion
       calificacion_proveedor: CalificacionProveedor
       rubro_proveedor: RubroProveedor
+      estado_compra: EstadoCompra
     }
   }
 }

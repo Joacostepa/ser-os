@@ -86,6 +86,15 @@ export const RUBRO_PROVEEDOR_CONFIG = {
   otro: { label: "Otro", color: "bg-gray-100 text-gray-600" },
 } as const
 
+export const ESTADO_COMPRA_CONFIG = {
+  borrador: { label: "Borrador", color: "bg-gray-100 text-gray-700" },
+  enviada: { label: "Enviada", color: "bg-blue-100 text-blue-800" },
+  confirmada: { label: "Confirmada", color: "bg-indigo-100 text-indigo-800" },
+  recibida_parcial: { label: "Recibida parcial", color: "bg-amber-100 text-amber-800" },
+  recibida: { label: "Recibida", color: "bg-green-100 text-green-800" },
+  cancelada: { label: "Cancelada", color: "bg-red-100 text-red-800" },
+} as const
+
 export const METODOS_PAGO = [
   "Transferencia bancaria",
   "MercadoPago",

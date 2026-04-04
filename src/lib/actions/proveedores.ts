@@ -34,6 +34,11 @@ export async function getProveedor(id: string) {
       ),
       pagos(
         id, monto, metodo, concepto, fecha, notas
+      ),
+      compras(
+        id, estado, fecha_pedido, fecha_esperada, fecha_recibida, notas, created_at,
+        pedido:pedidos(id, numero_tn),
+        items:items_compra(count)
       )
     `)
     .eq("id", id)
