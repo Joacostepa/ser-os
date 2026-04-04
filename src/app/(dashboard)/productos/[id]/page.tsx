@@ -1,4 +1,5 @@
 import { getProducto } from "@/lib/actions/productos"
+import { getRecetaByProducto } from "@/lib/actions/recetas"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ import {
 import { CanalBadge } from "@/components/shared/canal-badge"
 import { ArrowLeft, Package } from "lucide-react"
 import Link from "next/link"
+import { RecetaEditor } from "./receta-editor"
 
 export default async function ProductoDetailPage({
   params,
@@ -20,7 +22,10 @@ export default async function ProductoDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const producto = await getProducto(id)
+  const [producto, receta] = await Promise.all([
+    getProducto(id),
+    getRecetaByProducto(id),
+  ])
 
   const totalStock = producto.variantes?.reduce(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,6 +172,12 @@ export default async function ProductoDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <RecetaEditor
+        productoId={producto.id}
+        productoNombre={producto.nombre}
+        recetaActual={receta}
+      />
     </div>
   )
 }

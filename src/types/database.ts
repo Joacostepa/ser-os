@@ -40,6 +40,9 @@ export type EstadoCompra = "borrador" | "enviada" | "confirmada" | "recibida_par
 export type TipoNotificacion = "interna" | "email_cliente" | "whatsapp"
 export type CalificacionProveedor = "excelente" | "bueno" | "regular" | "malo"
 export type RubroProveedor = "textil" | "imprenta" | "confeccion" | "madera" | "cuero" | "packaging" | "otro"
+export type TipoInsumo = "material" | "servicio"
+export type UnidadInsumo = "unidades" | "metros" | "kg" | "rollos" | "horas" | "ml" | "litros"
+export type ReferenciaMovimiento = "compra" | "pedido" | "ajuste_manual"
 
 export interface Database {
   public: {
@@ -318,6 +321,7 @@ export interface Database {
           id: string
           compra_id: string
           producto_id: string | null
+          insumo_id: string | null
           descripcion: string
           cantidad: number
           precio_unitario: number
@@ -328,6 +332,67 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["items_compra"]["Row"], "id" | "created_at" | "subtotal">
         Update: Partial<Database["public"]["Tables"]["items_compra"]["Insert"]>
+      }
+      insumos: {
+        Row: {
+          id: string
+          nombre: string
+          tipo: TipoInsumo
+          unidad: UnidadInsumo
+          stock_actual: number
+          stock_minimo: number
+          costo_unitario: number
+          unidad_compra: string | null
+          rendimiento: number
+          proveedor_id: string | null
+          producto_id: string | null
+          activo: boolean
+          notas: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["insumos"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["insumos"]["Insert"]>
+      }
+      recetas: {
+        Row: {
+          id: string
+          producto_id: string
+          nombre: string
+          activa: boolean
+          notas: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["recetas"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["recetas"]["Insert"]>
+      }
+      receta_insumos: {
+        Row: {
+          id: string
+          receta_id: string
+          insumo_id: string
+          cantidad: number
+          notas: string | null
+        }
+        Insert: Omit<Database["public"]["Tables"]["receta_insumos"]["Row"], "id">
+        Update: Partial<Database["public"]["Tables"]["receta_insumos"]["Insert"]>
+      }
+      movimientos_stock: {
+        Row: {
+          id: string
+          insumo_id: string
+          tipo: TipoMovimientoStock
+          cantidad: number
+          costo_unitario: number | null
+          stock_anterior: number
+          stock_posterior: number
+          referencia_tipo: ReferenciaMovimiento | null
+          referencia_id: string | null
+          notas: string | null
+          usuario_id: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["movimientos_stock"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["movimientos_stock"]["Insert"]>
       }
     }
     Views: Record<string, never>
@@ -348,6 +413,10 @@ export interface Database {
       calificacion_proveedor: CalificacionProveedor
       rubro_proveedor: RubroProveedor
       estado_compra: EstadoCompra
+      tipo_insumo: TipoInsumo
+      unidad_insumo: UnidadInsumo
+      tipo_movimiento_stock: TipoMovimientoStock
+      referencia_movimiento: ReferenciaMovimiento
     }
   }
 }

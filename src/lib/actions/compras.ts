@@ -47,7 +47,8 @@ export async function getCompra(id: string) {
       pedido:pedidos(id, numero_tn, estado_interno, cliente:clientes(nombre)),
       items:items_compra(
         *,
-        producto:productos(id, nombre, sku)
+        producto:productos(id, nombre, sku),
+        insumo:insumos(id, nombre, unidad, rendimiento)
       )
     `)
     .eq("id", id)
@@ -65,6 +66,7 @@ export async function crearCompra(data: {
   notas?: string
   items: {
     producto_id?: string
+    insumo_id?: string
     descripcion: string
     cantidad: number
     precio_unitario: number
@@ -93,6 +95,7 @@ export async function crearCompra(data: {
     const items = data.items.map((item) => ({
       compra_id: compra.id,
       producto_id: item.producto_id || null,
+      insumo_id: item.insumo_id || null,
       descripcion: item.descripcion,
       cantidad: item.cantidad,
       precio_unitario: item.precio_unitario,
@@ -127,11 +130,11 @@ export async function actualizarEstadoCompra(id: string, estado: EstadoCompra) {
 
   if (error) throw new Error(error.message)
 
-  // If fully received, mark all items as received
+  // If fully received, mark all items as received + generate stock entries
   if (estado === "recibida") {
     const { data: items } = await supabase
       .from("items_compra")
-      .select("id, cantidad")
+      .select("id, cantidad, insumo_id, insumo:insumos(rendimiento)")
       .eq("compra_id", id)
 
     if (items) {
@@ -140,6 +143,23 @@ export async function actualizarEstadoCompra(id: string, estado: EstadoCompra) {
           .from("items_compra")
           .update({ cantidad_recibida: item.cantidad })
           .eq("id", item.id)
+
+        // Generate stock entry for items linked to insumos
+        if (item.insumo_id) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rendimiento = Number((item as any).insumo?.rendimiento || 1)
+          const cantidadStock = item.cantidad * rendimiento
+
+          await supabase.rpc("registrar_movimiento_stock", {
+            p_insumo_id: item.insumo_id,
+            p_tipo: "entrada",
+            p_cantidad: cantidadStock,
+            p_referencia_tipo: "compra",
+            p_referencia_id: id,
+            p_notas: `Recepción de compra (${item.cantidad} × ${rendimiento} = ${cantidadStock})`,
+            p_usuario_id: null,
+          })
+        }
       }
     }
   }

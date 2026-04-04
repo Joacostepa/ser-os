@@ -95,6 +95,28 @@ export const ESTADO_COMPRA_CONFIG = {
   cancelada: { label: "Cancelada", color: "bg-red-100 text-red-800" },
 } as const
 
+export const TIPO_INSUMO_CONFIG = {
+  material: { label: "Material", color: "bg-blue-100 text-blue-800" },
+  servicio: { label: "Servicio", color: "bg-purple-100 text-purple-800" },
+} as const
+
+export const UNIDAD_INSUMO_CONFIG = {
+  unidades: { label: "Unidades", short: "u" },
+  metros: { label: "Metros", short: "m" },
+  kg: { label: "Kilogramos", short: "kg" },
+  rollos: { label: "Rollos", short: "rol" },
+  horas: { label: "Horas", short: "hs" },
+  ml: { label: "Mililitros", short: "ml" },
+  litros: { label: "Litros", short: "L" },
+} as const
+
+export const TIPO_MOVIMIENTO_CONFIG = {
+  entrada: { label: "Entrada", color: "bg-green-100 text-green-800", sign: "+" },
+  salida: { label: "Salida", color: "bg-red-100 text-red-800", sign: "-" },
+  ajuste: { label: "Ajuste", color: "bg-amber-100 text-amber-800", sign: "~" },
+  devolucion: { label: "Devolución", color: "bg-blue-100 text-blue-800", sign: "+" },
+} as const
+
 export const METODOS_PAGO = [
   "Transferencia bancaria",
   "MercadoPago",

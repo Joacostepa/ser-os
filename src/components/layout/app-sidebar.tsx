@@ -14,6 +14,7 @@ import {
   LogOut,
   Truck,
   ShoppingBag,
+  Boxes,
 } from "lucide-react"
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { label: "Pagos", href: "/pagos", icon: CreditCard },
   { label: "Proveedores", href: "/proveedores", icon: Truck },
   { label: "Compras", href: "/compras", icon: ShoppingBag },
+  { label: "Insumos", href: "/insumos", icon: Boxes },
 ]
 
 const CONFIG_ITEMS = [
