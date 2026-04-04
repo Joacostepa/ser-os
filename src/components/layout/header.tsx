@@ -25,6 +25,10 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   usuarios: "Usuarios",
   plantillas: "Plantillas",
   integracion: "Integración",
+  proveedores: "Proveedores",
+  compras: "Compras",
+  insumos: "Insumos",
+  reportes: "Reportes",
 }
 
 export function Header() {

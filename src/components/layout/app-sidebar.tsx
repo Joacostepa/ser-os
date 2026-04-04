@@ -15,6 +15,7 @@ import {
   Truck,
   ShoppingBag,
   Boxes,
+  BarChart3,
 } from "lucide-react"
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const NAV_ITEMS = [
   { label: "Proveedores", href: "/proveedores", icon: Truck },
   { label: "Compras", href: "/compras", icon: ShoppingBag },
   { label: "Insumos", href: "/insumos", icon: Boxes },
+  { label: "Reportes", href: "/reportes", icon: BarChart3 },
 ]
 
 const CONFIG_ITEMS = [
