@@ -274,7 +274,7 @@ export async function importOrders(tiendaId: string, jobId: string) {
   const errors: string[] = []
 
   try {
-    for await (const orders of client.getOrders()) {
+    for await (const orders of client.getOrders({ sort_by: "created_at-asc" })) {
       for (const order of orders) {
         try {
           // Skip if already exists
