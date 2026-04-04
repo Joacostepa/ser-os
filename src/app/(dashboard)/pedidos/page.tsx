@@ -38,6 +38,7 @@ export default function PedidosPage() {
           tienda:tiendas(id, nombre, canal)
         `)
         .order("numero_tn", { ascending: false, nullsFirst: false })
+        .limit(5000)
 
       if (estado && estado !== "todos") {
         query = query.eq("estado_interno", estado)
@@ -49,7 +50,7 @@ export default function PedidosPage() {
         query = query.eq("prioridad", prioridad)
       }
       if (busqueda) {
-        query = query.or(`numero_tn.ilike.%${busqueda}%`)
+        query = query.or(`numero_tn.ilike.%${busqueda}%,cliente.nombre.ilike.%${busqueda}%`)
       }
 
       const { data } = await query
