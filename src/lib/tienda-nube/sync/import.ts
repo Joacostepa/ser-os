@@ -277,23 +277,20 @@ export async function importOrders(tiendaId: string, jobId: string) {
   const errors: string[] = []
 
   try {
+    // Pre-load ALL existing TN order IDs in one query to skip them instantly
+    const { data: existingOrders } = await supabase
+      .from("pedidos")
+      .select("tienda_nube_id")
+      .eq("tienda_id", tienda.id)
+      .not("tienda_nube_id", "is", null)
+
+    const existingTnIds = new Set(existingOrders?.map((o) => o.tienda_nube_id) || [])
+
     for await (const orders of client.getOrders({ sort_by: "created_at-asc" })) {
       for (const order of orders) {
         try {
-          // Skip if already exists
-          const { data: existing } = await supabase
-            .from("pedidos")
-            .select("id")
-            .eq("tienda_nube_id", String(order.id))
-            .eq("tienda_id", tienda.id)
-            .single()
-
-          if (existing) {
-            // Update fecha_ingreso if missing
-            await supabase
-              .from("pedidos")
-              .update({ fecha_ingreso: order.created_at })
-              .eq("id", existing.id)
+          // Skip if already exists — instant check via Set (no DB query)
+          if (existingTnIds.has(String(order.id))) {
             processed++
             continue
           }
