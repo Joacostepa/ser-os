@@ -458,6 +458,7 @@ export interface Database {
           receta_id: string
           insumo_id: string
           cantidad: number
+          costo_override: number | null
           notas: string | null
         }
         Insert: Omit<Database["public"]["Tables"]["receta_insumos"]["Row"], "id">

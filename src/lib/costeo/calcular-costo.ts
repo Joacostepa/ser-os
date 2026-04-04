@@ -44,7 +44,7 @@ export async function calcularCostoUnitarioProducto(
     .select(`
       id,
       items:receta_insumos(
-        id, cantidad,
+        id, cantidad, costo_override,
         insumo:insumos(id, nombre, tipo, unidad, costo_unitario)
       )
     `)
@@ -72,7 +72,7 @@ export async function calcularCostoUnitarioProducto(
     if (!insumo) continue
 
     const cantidad = Number(item.cantidad)
-    const costoUnitario = Number(insumo.costo_unitario || 0)
+    const costoUnitario = Number(item.costo_override ?? insumo.costo_unitario ?? 0)
     const subtotal = cantidad * costoUnitario
 
     if (costoUnitario === 0) {

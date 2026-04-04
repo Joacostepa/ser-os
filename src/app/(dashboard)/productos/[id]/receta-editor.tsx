@@ -26,7 +26,21 @@ interface RecetaItem {
   insumo_tipo: string
   insumo_unidad: string
   insumo_costo: number
+  costo_override: number | null
   cantidad: number
+}
+
+function costoEfectivo(item: RecetaItem): number {
+  return item.costo_override !== null ? item.costo_override : item.insumo_costo
+}
+
+function MargenBadge({ margenPct }: { margenPct: number }) {
+  const badgeClass = margenPct >= 35
+    ? "bg-green-100 text-green-700"
+    : margenPct >= 20
+      ? "bg-amber-100 text-amber-700"
+      : "bg-red-100 text-red-700"
+  return <Badge variant="secondary" className={badgeClass}>{margenPct.toFixed(1)}%</Badge>
 }
 
 export function RecetaEditor({
@@ -64,6 +78,7 @@ export function RecetaEditor({
         insumo_tipo: item.insumo?.tipo || "material",
         insumo_unidad: item.insumo?.unidad || "unidades",
         insumo_costo: Number(item.insumo?.costo_unitario || 0),
+        costo_override: item.costo_override != null ? Number(item.costo_override) : null,
         cantidad: Number(item.cantidad),
       })))
     }
@@ -72,7 +87,7 @@ export function RecetaEditor({
   function addItem() {
     setItems([...items, {
       insumo_id: "", insumo_nombre: "", insumo_tipo: "material",
-      insumo_unidad: "unidades", insumo_costo: 0, cantidad: 1,
+      insumo_unidad: "unidades", insumo_costo: 0, costo_override: null, cantidad: 1,
     }])
   }
 
@@ -91,6 +106,7 @@ export function RecetaEditor({
         insumo_tipo: insumo.tipo,
         insumo_unidad: insumo.unidad,
         insumo_costo: Number(insumo.costo_unitario),
+        costo_override: null,
       } : item
     ))
   }
@@ -107,6 +123,7 @@ export function RecetaEditor({
         items: items.map((i) => ({
           insumo_id: i.insumo_id,
           cantidad: i.cantidad,
+          costo_override: i.costo_override !== null && i.costo_override !== i.insumo_costo ? i.costo_override : null,
         })),
       })
       toast.success("Receta guardada")
@@ -119,7 +136,10 @@ export function RecetaEditor({
     }
   }
 
-  const costoTotal = items.reduce((sum, i) => sum + (i.cantidad * i.insumo_costo), 0)
+  const costoTotal = items.reduce((sum, i) => sum + (i.cantidad * costoEfectivo(i)), 0)
+  const precio = Number(precioMayorista || 0)
+  const margen = precio - costoTotal
+  const margenPct = precio > 0 ? (margen / precio) * 100 : 0
 
   // View mode
   if (!editing) {
@@ -146,7 +166,7 @@ export function RecetaEditor({
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Cantidad</TableHead>
                     <TableHead className="text-right">Costo unit.</TableHead>
-                    <TableHead className="text-right">Costo línea</TableHead>
+                    <TableHead className="text-right">Subtotal</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -154,79 +174,66 @@ export function RecetaEditor({
                   {recetaActual.items.map((item: any) => {
                     const unidad = UNIDAD_INSUMO_CONFIG[item.insumo?.unidad as UnidadInsumo]
                     const tipoConf = TIPO_INSUMO_CONFIG[item.insumo?.tipo as TipoInsumo]
-                    const costoLinea = Number(item.cantidad) * Number(item.insumo?.costo_unitario || 0)
+                    const costo = Number(item.costo_override ?? item.insumo?.costo_unitario ?? 0)
+                    const subtotal = Number(item.cantidad) * costo
+                    const esOverride = item.costo_override != null
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.insumo?.nombre}</TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={tipoConf?.color}>{tipoConf?.label}</Badge>
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums">
                           {Number(item.cantidad).toLocaleString("es-AR")} {unidad?.short}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          ${Number(item.insumo?.costo_unitario || 0).toLocaleString("es-AR")}
+                        <TableCell className="text-right font-mono tabular-nums">
+                          ${costo.toLocaleString("es-AR")}
+                          {esOverride && <span className="text-[10px] text-amber-600 ml-1">*</span>}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">
-                          ${costoLinea.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                        <TableCell className="text-right font-mono tabular-nums font-medium">
+                          ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                         </TableCell>
                       </TableRow>
                     )
                   })}
                 </TableBody>
               </Table>
-              <div className="flex justify-end mt-3 pt-3 border-t">
-                <p className="text-sm font-medium">
-                  Costo total: <span className="text-lg">${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
-                </p>
-              </div>
 
-              {/* Costeo section */}
-              <div className="mt-4 pt-4 border-t space-y-2">
-                <p className="text-sm font-medium text-stone-800">Costeo</p>
+              {/* Costeo footer */}
+              <div className="mt-4 pt-4 border-t space-y-3">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Costo unitario</p>
-                    <p className="text-base font-mono font-medium">
+                    <p className="text-xs text-stone-500">Costo unitario</p>
+                    <p className="text-lg font-mono font-medium text-stone-900">
                       ${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Precio de venta</p>
-                    <p className="text-base font-mono font-medium">
-                      {precioMayorista
-                        ? `$${Number(precioMayorista).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
-                        : "—"}
+                    <p className="text-xs text-stone-500">Precio de venta</p>
+                    <p className="text-lg font-mono font-medium text-stone-900">
+                      {precio > 0 ? `$${precio.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Margen bruto</p>
-                    {precioMayorista && precioMayorista > 0 ? (() => {
-                      const margen = Number(precioMayorista) - costoTotal
-                      const margenPct = (margen / Number(precioMayorista)) * 100
-                      const badgeClass = margenPct >= 40
-                        ? "bg-green-100 text-green-700"
-                        : margenPct >= 20
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-red-100 text-red-700"
-                      return (
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-mono font-medium">
-                            ${margen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                          </span>
-                          <Badge variant="secondary" className={badgeClass}>
-                            {margenPct.toFixed(1)}%
-                          </Badge>
-                        </div>
-                      )
-                    })() : (
-                      <p className="text-base font-mono font-medium text-muted-foreground">—</p>
+                    <p className="text-xs text-stone-500">Margen bruto</p>
+                    {precio > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-mono font-medium text-stone-900">
+                          ${margen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                        </span>
+                        <MargenBadge margenPct={margenPct} />
+                      </div>
+                    ) : (
+                      <p className="text-lg font-mono font-medium text-stone-400">—</p>
                     )}
                   </div>
                 </div>
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {recetaActual?.items?.some((item: any) => Number(item.insumo?.costo_unitario || 0) === 0) && (
-                  <div className="rounded-md bg-amber-50 border border-amber-200 p-2 mt-2">
+                {recetaActual?.items?.some((item: any) => {
+                  const c = Number(item.costo_override ?? item.insumo?.costo_unitario ?? 0)
+                  return c === 0
+                }) && (
+                  <div className="rounded-md bg-amber-50 border border-amber-200 p-2">
                     <p className="text-sm text-amber-800">
                       Algunos insumos tienen costo $0. El costeo puede no ser exacto.
                     </p>
@@ -235,7 +242,7 @@ export function RecetaEditor({
               </div>
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-4">
+            <p className="text-center text-stone-400 py-4">
               No hay receta definida. Creá una para calcular costos automáticamente.
             </p>
           )}
@@ -273,14 +280,32 @@ export function RecetaEditor({
               <Plus className="h-3 w-3 mr-1" /> Agregar
             </Button>
           </div>
+
+          {/* Header */}
+          <div className="flex gap-2 text-[10px] text-stone-400 uppercase tracking-wide px-1">
+            <span className="flex-1">Insumo</span>
+            <span className="w-20 text-right">Cantidad</span>
+            <span className="w-24 text-right">Costo unit.</span>
+            <span className="w-24 text-right">Subtotal</span>
+            <span className="w-9" />
+          </div>
+
           <div className="space-y-2">
             {items.map((item, idx) => {
               const unidad = UNIDAD_INSUMO_CONFIG[item.insumo_unidad as UnidadInsumo]
+              const costo = costoEfectivo(item)
+              const subtotal = item.cantidad * costo
               return (
                 <div key={idx} className="flex gap-2 items-center">
                   <div className="flex-1">
                     <Select value={item.insumo_id} onValueChange={(v: string | null) => v && selectInsumo(idx, v)}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar insumo..." /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar insumo...">
+                          {item.insumo_nombre
+                            ? `${item.insumo_nombre} (${unidad?.short || item.insumo_unidad})`
+                            : "Seleccionar insumo..."}
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {insumos.map((ins: any) => (
@@ -291,20 +316,33 @@ export function RecetaEditor({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-24">
+                  <div className="w-20">
                     <Input
                       type="number" min={0} step={0.01}
                       value={item.cantidad}
                       onChange={(e) => setItems((prev) => prev.map((it, i) =>
                         i === idx ? { ...it, cantidad: parseFloat(e.target.value) || 0 } : it
                       ))}
-                      placeholder={unidad?.short}
+                      className="font-mono text-right"
                     />
                   </div>
-                  <span className="text-sm text-muted-foreground w-20 text-right tabular-nums">
-                    ${(item.cantidad * item.insumo_costo).toLocaleString("es-AR")}
+                  <div className="w-24">
+                    <Input
+                      type="number" min={0} step={0.01}
+                      value={item.costo_override !== null ? item.costo_override : item.insumo_costo}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0
+                        setItems((prev) => prev.map((it, i) =>
+                          i === idx ? { ...it, costo_override: val } : it
+                        ))
+                      }}
+                      className="font-mono text-right"
+                    />
+                  </div>
+                  <span className="w-24 text-sm font-mono font-medium text-stone-700 text-right tabular-nums">
+                    ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                   </span>
-                  <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} className="shrink-0">
+                  <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} className="shrink-0 w-9">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -313,13 +351,36 @@ export function RecetaEditor({
           </div>
         </div>
 
-        {costoTotal > 0 && (
-          <div className="flex justify-end pt-2 border-t">
-            <p className="text-sm font-medium">
-              Costo total: <span className="text-lg">${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
-            </p>
+        {/* Totals */}
+        <div className="pt-3 border-t space-y-2">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-stone-500">Costo unitario</p>
+              <p className="text-lg font-mono font-medium text-stone-900">
+                ${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-stone-500">Precio de venta</p>
+              <p className="text-lg font-mono font-medium text-stone-900">
+                {precio > 0 ? `$${precio.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-stone-500">Margen bruto</p>
+              {precio > 0 ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-mono font-medium text-stone-900">
+                    ${margen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </span>
+                  <MargenBadge margenPct={margenPct} />
+                </div>
+              ) : (
+                <p className="text-lg font-mono font-medium text-stone-400">—</p>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   )

@@ -11,7 +11,7 @@ export async function getRecetaByProducto(productoId: string) {
     .select(`
       *,
       items:receta_insumos(
-        id, cantidad, notas,
+        id, cantidad, costo_override, notas,
         insumo:insumos(id, nombre, tipo, unidad, costo_unitario)
       )
     `)
@@ -31,6 +31,7 @@ export async function crearReceta(data: {
   items: {
     insumo_id: string
     cantidad: number
+    costo_override?: number | null
     notas?: string
   }[]
 }) {
@@ -63,6 +64,7 @@ export async function crearReceta(data: {
       receta_id: receta.id,
       insumo_id: item.insumo_id,
       cantidad: item.cantidad,
+      costo_override: item.costo_override || null,
       notas: item.notas || null,
     }))
 
@@ -83,7 +85,7 @@ export async function calcularCostoReceta(productoId: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return receta.items.reduce((total: number, item: any) => {
-    const costoInsumo = Number(item.insumo?.costo_unitario || 0)
-    return total + (Number(item.cantidad) * costoInsumo)
+    const costo = Number(item.costo_override ?? item.insumo?.costo_unitario ?? 0)
+    return total + (Number(item.cantidad) * costo)
   }, 0)
 }
