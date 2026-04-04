@@ -1,5 +1,5 @@
 import { getPedido } from "@/lib/actions/pedidos"
-import { PedidoDetail } from "@/components/pedidos/pedido-detail"
+import { PedidoDetailView } from "./pedido-detail-view"
 
 export default async function PedidoDetailPage({
   params,
@@ -9,5 +9,5 @@ export default async function PedidoDetailPage({
   const { id } = await params
   const pedido = await getPedido(id)
 
-  return <PedidoDetail pedido={pedido} />
+  return <PedidoDetailView pedido={pedido} />
 }

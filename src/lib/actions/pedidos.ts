@@ -71,6 +71,7 @@ export async function getPedido(id: string) {
     .select(`
       *,
       cliente:clientes(*),
+      tienda:tiendas(id, nombre, tienda_nube_store_id),
       items:items_pedido(
         *,
         producto:productos(nombre, sku),
