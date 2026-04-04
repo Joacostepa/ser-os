@@ -17,6 +17,7 @@ import { usePathname } from "next/navigation"
 const BREADCRUMB_LABELS: Record<string, string> = {
   pedidos: "Pedidos",
   tareas: "Tareas",
+  productos: "Productos",
   clientes: "Clientes",
   pagos: "Pagos",
   configuracion: "Configuración",

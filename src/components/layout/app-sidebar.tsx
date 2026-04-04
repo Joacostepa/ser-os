@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Users,
   CreditCard,
+  Package,
   Settings,
   PackageOpen,
   LogOut,
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Pedidos", href: "/pedidos", icon: ShoppingCart },
   { label: "Tareas", href: "/tareas", icon: CheckSquare },
+  { label: "Productos", href: "/productos", icon: Package },
   { label: "Clientes", href: "/clientes", icon: Users },
   { label: "Pagos", href: "/pagos", icon: CreditCard },
 ]
