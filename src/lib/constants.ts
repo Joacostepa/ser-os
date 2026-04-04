@@ -117,6 +117,26 @@ export const TIPO_MOVIMIENTO_CONFIG = {
   devolucion: { label: "Devolución", color: "bg-blue-100 text-blue-800", sign: "+" },
 } as const
 
+export const ESTADO_PAGO_COMPRA_CONFIG = {
+  pendiente: { label: "Pendiente", color: "text-red-500" },
+  parcial: { label: "Parcial", color: "text-amber-600" },
+  pagada: { label: "Pagada", color: "text-green-600" },
+} as const
+
+export const CONDICION_PAGO_OPTIONS = [
+  { value: "contado", label: "Contado" },
+  { value: "15_dias", label: "15 días" },
+  { value: "30_dias", label: "30 días" },
+  { value: "60_dias", label: "60 días" },
+  { value: "a_convenir", label: "A convenir" },
+] as const
+
+export const CALIDAD_RECEPCION = {
+  ok: { label: "OK", color: "text-green-600" },
+  defectuoso: { label: "Defectuoso", color: "text-red-600" },
+  incompleto: { label: "Incompleto", color: "text-amber-600" },
+} as const
+
 export const TIPO_ASIENTO_CONFIG = {
   venta: { label: "Venta", color: "bg-green-50 text-green-700" },
   cobro: { label: "Cobro", color: "bg-blue-50 text-blue-700" },

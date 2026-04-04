@@ -309,16 +309,24 @@ export interface Database {
       compras: {
         Row: {
           id: string
+          numero_orden: string
           proveedor_id: string
           pedido_id: string | null
           estado: EstadoCompra
+          estado_pago: string
           fecha_pedido: string
+          fecha_envio: string | null
+          fecha_confirmacion: string | null
           fecha_esperada: string | null
           fecha_recibida: string | null
+          condicion_pago: string | null
+          subtotal: number
+          descuento: number
+          notas: string | null
+          notas_internas: string | null
           cotizacion_usd: number | null
           cotizacion_tipo: string | null
           monto_total_usd: number | null
-          notas: string | null
           created_at: string
           updated_at: string
         }
@@ -330,6 +338,7 @@ export interface Database {
           id: string
           compra_id: string
           producto_id: string | null
+          variante_id: string | null
           insumo_id: string | null
           descripcion: string
           cantidad: number
@@ -341,6 +350,62 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["items_compra"]["Row"], "id" | "created_at" | "subtotal">
         Update: Partial<Database["public"]["Tables"]["items_compra"]["Insert"]>
+      }
+      recepciones: {
+        Row: {
+          id: string
+          compra_id: string
+          fecha: string
+          usuario_id: string | null
+          notas: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["recepciones"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["recepciones"]["Insert"]>
+      }
+      items_recepcion: {
+        Row: {
+          id: string
+          recepcion_id: string
+          item_compra_id: string
+          cantidad_recibida: number
+          estado_calidad: string
+          notas: string | null
+        }
+        Insert: Omit<Database["public"]["Tables"]["items_recepcion"]["Row"], "id">
+        Update: Partial<Database["public"]["Tables"]["items_recepcion"]["Insert"]>
+      }
+      pagos_proveedor: {
+        Row: {
+          id: string
+          compra_id: string
+          proveedor_id: string
+          monto: number
+          metodo_pago: string
+          fecha: string
+          comprobante_url: string | null
+          observaciones: string | null
+          asiento_id: number | null
+          usuario_id: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["pagos_proveedor"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["pagos_proveedor"]["Insert"]>
+      }
+      historial_precios: {
+        Row: {
+          id: string
+          proveedor_id: string
+          producto_id: string | null
+          variante_id: string | null
+          descripcion: string | null
+          precio_unitario: number
+          fecha: string
+          compra_id: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["historial_precios"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["historial_precios"]["Insert"]>
       }
       insumos: {
         Row: {
