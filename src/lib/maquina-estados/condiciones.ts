@@ -94,6 +94,17 @@ export async function evaluarCondicion(
       return pedido.datos_envio !== null
     }
 
+    // ── Condiciones de clasificación ──────────────────────────────────
+    case "tipo_clasificado": {
+      const { data: p } = await supabase
+        .from("pedidos")
+        .select("tipo")
+        .eq("id", pedidoId)
+        .single()
+
+      return p?.tipo !== "sin_clasificar" && p?.tipo !== null
+    }
+
     // ── Condiciones validadas en frontend (siempre true) ────────────
     case "confirmacion_usuario":
     case "motivo_cancelacion":

@@ -50,14 +50,19 @@ export function PrioridadBadge({ prioridad }: { prioridad: Prioridad }) {
   )
 }
 
-export function TipoBadge({ tipo }: { tipo: "estandar" | "personalizado" }) {
+const TIPO_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  sin_clasificar:  { bg: "bg-stone-100",  text: "text-stone-500",  label: "Sin clasificar" },
+  logo_ser:        { bg: "bg-blue-50",    text: "text-blue-700",   label: "Logo SER" },
+  estandar:        { bg: "bg-blue-50",    text: "text-blue-700",   label: "Logo SER" },
+  marca_blanca:    { bg: "bg-stone-100",  text: "text-stone-700",  label: "Marca blanca" },
+  personalizado:   { bg: "bg-violet-50",  text: "text-violet-700", label: "Personalizado" },
+}
+
+export function TipoBadge({ tipo }: { tipo: string }) {
+  const config = TIPO_STYLES[tipo] || TIPO_STYLES.sin_clasificar
   return (
-    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-md ${
-      tipo === "personalizado"
-        ? "bg-violet-50 text-violet-700"
-        : "bg-blue-50 text-blue-700"
-    }`}>
-      {tipo === "estandar" ? "Estándar" : "Personalizado"}
+    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-md ${config.bg} ${config.text}`}>
+      {config.label}
     </span>
   )
 }

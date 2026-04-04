@@ -1,32 +1,40 @@
 "use client"
 
 import { KanbanCard } from "./kanban-card"
-import { Package, Clock, Wrench, PackageCheck, Truck } from "lucide-react"
+import { Package } from "lucide-react"
 import type { EstadoInterno } from "@/types/database"
+import type { ConfigKanbanColumna } from "@/lib/config/tipos"
 
-const COLUMNS = [
-  { id: "nuevos", label: "Nuevos", color: "#a8a29e", icon: Package, estados: ["nuevo"] },
-  { id: "sena", label: "Pendiente seña", color: "#f59e0b", icon: Clock, estados: ["pendiente_sena"] },
-  { id: "prearmado", label: "Pre-armado", color: "#3b82f6", icon: Wrench, estados: ["sena_recibida", "en_prearmado", "esperando_insumos", "esperando_diseno", "insumos_recibidos", "listo_para_armar"] },
-  { id: "armado", label: "Armado", color: "#8b5cf6", icon: PackageCheck, estados: ["en_armado", "armado_completo"] },
-  { id: "despacho", label: "Despacho", color: "#16a34a", icon: Truck, estados: ["pendiente_saldo", "listo_para_despacho", "en_preparacion_envio"] },
+const FALLBACK_COLUMNS: ConfigKanbanColumna[] = [
+  { id: 0, nombre: "Nuevos", color: "#a8a29e", icono: null, estados: ["nuevo"], colapsada: false, orden: 0 },
+  { id: 1, nombre: "Pendiente seña", color: "#f59e0b", icono: null, estados: ["pendiente_de_sena"], colapsada: false, orden: 1 },
+  { id: 2, nombre: "Pre-armado", color: "#3b82f6", icono: null, estados: ["habilitado", "en_prearmado", "esperando_insumos", "esperando_diseno", "insumos_recibidos", "listo_para_armar"], colapsada: false, orden: 2 },
+  { id: 3, nombre: "Armado", color: "#8b5cf6", icono: null, estados: ["en_armado", "armado_completo"], colapsada: false, orden: 3 },
+  { id: 4, nombre: "Despacho", color: "#16a34a", icono: null, estados: ["pendiente_de_cobro", "listo_para_despachar", "en_preparacion_envio"], colapsada: false, orden: 4 },
 ]
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function KanbanView({ pedidos, onPedidoClick }: { pedidos: any[]; onPedidoClick: (id: string) => void }) {
+interface KanbanViewProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  pedidos: any[]
+  onPedidoClick: (id: string) => void
+  columnas?: ConfigKanbanColumna[]
+}
+
+export function KanbanView({ pedidos, onPedidoClick, columnas }: KanbanViewProps) {
+  const columns = columnas && columnas.length > 0 ? columnas : FALLBACK_COLUMNS
+
   return (
     <div className="flex gap-3 overflow-x-auto pb-4" style={{ height: "calc(100vh - 200px)" }}>
-      {COLUMNS.map((col) => {
+      {columns.map((col) => {
         const pedidosCol = pedidos.filter((p) => col.estados.includes(p.estado_interno as EstadoInterno))
-        const Icon = col.icon
 
         return (
           <div key={col.id} className="w-[280px] min-w-[280px] flex flex-col">
             {/* Column header */}
             <div className="flex items-center justify-between px-3 py-2 mb-2" style={{ borderBottom: `2px solid ${col.color}` }}>
               <div className="flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.5} />
-                <span className="text-xs font-medium uppercase tracking-wide text-stone-500">{col.label}</span>
+                <Package className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.5} />
+                <span className="text-xs font-medium uppercase tracking-wide text-stone-500">{col.nombre}</span>
               </div>
               <span className="text-xs font-medium font-mono bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
                 {pedidosCol.length}

@@ -7,12 +7,15 @@ import { ListView } from "./components/list-view"
 import { DetailPanel } from "./components/detail-panel"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getPedidosOperaciones } from "@/lib/actions/operaciones"
+import { getKanbanColumnas } from "@/lib/config/etapas"
+import type { ConfigKanbanColumna } from "@/lib/config/tipos"
 
 export default function OperacionesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pedidos, setPedidos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPedido, setSelectedPedido] = useState<string | null>(null)
+  const [columnas, setColumnas] = useState<ConfigKanbanColumna[]>([])
 
   // Filters
   const [vista, setVista] = useState<Vista>("kanban")
@@ -20,6 +23,10 @@ export default function OperacionesPage() {
   const [estado, setEstado] = useState("todos")
   const [tipo, setTipo] = useState("todos")
   const [prioridad, setPrioridad] = useState("todos")
+
+  useEffect(() => {
+    getKanbanColumnas().then(setColumnas).catch(() => setColumnas([]))
+  }, [])
 
   useEffect(() => {
     async function fetch() {
@@ -66,7 +73,7 @@ export default function OperacionesPage() {
           ))}
         </div>
       ) : vista === "kanban" ? (
-        <KanbanView pedidos={pedidos} onPedidoClick={handlePedidoClick} />
+        <KanbanView pedidos={pedidos} onPedidoClick={handlePedidoClick} columnas={columnas} />
       ) : (
         <ListView pedidos={pedidos} onPedidoClick={handlePedidoClick} />
       )}

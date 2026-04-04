@@ -16,6 +16,7 @@ const mensajesCondicion: Record<string, string> = {
   motivo_cancelacion: "Se requiere un motivo de cancelación",
   motivo_bloqueo: "Se requiere un motivo de bloqueo",
   motivo_desbloqueo_resuelto: "Se debe indicar que el motivo de bloqueo fue resuelto",
+  tipo_clasificado: "Clasificá el pedido como Logo SER, Marca blanca o Personalizado antes de habilitarlo.",
 }
 
 /**

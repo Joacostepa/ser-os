@@ -1,8 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, FileText, Plug } from "lucide-react"
+import { Users, FileText, Plug, Workflow } from "lucide-react"
 import Link from "next/link"
 
 const CONFIG_SECTIONS = [
+  {
+    title: "Flujo de pedidos",
+    description: "Etapas, kanban y portal del cliente",
+    href: "/configuracion/flujo-pedidos",
+    icon: Workflow,
+  },
   {
     title: "Usuarios",
     description: "Gestión de usuarios internos y roles",

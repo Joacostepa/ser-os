@@ -32,7 +32,7 @@ export type EstadoPublico =
   | "enviado"
   | "entregado"
 
-export type TipoPedido = "estandar" | "personalizado"
+export type TipoPedido = "sin_clasificar" | "logo_ser" | "marca_blanca" | "personalizado" | "estandar"
 export type Prioridad = "urgente" | "normal" | "baja"
 export type TipoDespacho = "envio" | "retiro_oficina"
 export type CategoriaCliente = "nuevo" | "recurrente" | "vip"

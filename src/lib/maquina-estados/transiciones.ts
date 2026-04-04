@@ -13,7 +13,7 @@ export const transicionesValidas: Record<string, Transicion[]> = {
     },
     {
       estado: "habilitado",
-      condiciones: ["pago_anticipo_registrado"],
+      condiciones: ["pago_anticipo_registrado", "tipo_clasificado"],
       acciones: ["crear_tareas_automaticas"],
     },
     {
@@ -26,7 +26,7 @@ export const transicionesValidas: Record<string, Transicion[]> = {
   pendiente_de_sena: [
     {
       estado: "habilitado",
-      condiciones: ["pago_anticipo_registrado"],
+      condiciones: ["pago_anticipo_registrado", "tipo_clasificado"],
       acciones: ["crear_tareas_automaticas", "notificar_cliente_confirmado"],
     },
     {
