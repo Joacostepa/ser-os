@@ -8,8 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { ArrowLeft, Trash2, Plus, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Trash2, Plus, AlertTriangle, Search } from "lucide-react"
 import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const ESTADOS_EDITABLES = [
   "nuevo",
@@ -144,18 +150,49 @@ export default function EditarPedidoPage() {
     setItems((prev) => prev.filter((item) => item.key !== key))
   }
 
-  const addItem = () => {
+  // Product search state
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
+
+  const searchProducts = async (query: string) => {
+    if (query.length < 2) { setSearchResults([]); return }
+    setSearching(true)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from("productos")
+      .select("id, nombre, sku, precio_mayorista, variantes(id, nombre, sku, precio)")
+      .eq("activo", true)
+      .or(`nombre.ilike.%${query}%,sku.ilike.%${query}%`)
+      .order("nombre")
+      .limit(20)
+    setSearchResults(data || [])
+    setSearching(false)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addProducto = (producto: any, variante?: any) => {
+    const precio = variante?.precio || producto.precio_mayorista || 0
+    const nombre = variante
+      ? `${producto.nombre} — ${variante.nombre}`
+      : producto.nombre
+
     setItems((prev) => [
       ...prev,
       {
         key: `new-${Date.now()}`,
-        producto_id: null,
-        variante_id: null,
-        descripcion: "",
+        producto_id: producto.id,
+        variante_id: variante?.id || null,
+        descripcion: nombre,
         cantidad: 1,
-        precio_unitario: 0,
+        precio_unitario: Number(precio),
       },
     ])
+    setSearchOpen(false)
+    setSearchQuery("")
+    setSearchResults([])
   }
 
   // Save handler
@@ -303,12 +340,9 @@ export default function EditarPedidoPage() {
                     key={item.key}
                     className="grid grid-cols-[1fr_80px_100px_90px_40px] gap-2 px-4 py-2 items-center"
                   >
-                    <Input
-                      value={item.descripcion}
-                      onChange={(e) => updateItem(item.key, "descripcion", e.target.value)}
-                      placeholder="Descripcion del producto"
-                      className="h-8 text-sm"
-                    />
+                    <span className="text-sm text-stone-800 truncate px-1">
+                      {item.descripcion || "Producto sin nombre"}
+                    </span>
                     <Input
                       type="number"
                       value={item.cantidad || ""}
@@ -350,12 +384,79 @@ export default function EditarPedidoPage() {
                 variant="ghost"
                 size="sm"
                 className="text-stone-500 hover:text-stone-700"
-                onClick={addItem}
+                onClick={() => setSearchOpen(true)}
               >
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Agregar producto
               </Button>
             </div>
+
+            {/* Product search dialog */}
+            <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Buscar producto</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-stone-400" />
+                    <Input
+                      placeholder="Buscar por nombre o SKU..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        searchProducts(e.target.value)
+                      }}
+                      className="pl-8"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto space-y-1">
+                    {searching && <p className="text-xs text-stone-400 text-center py-4">Buscando...</p>}
+                    {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                      <p className="text-xs text-stone-400 text-center py-4">No se encontraron productos</p>
+                    )}
+                    {searchResults.map((prod) => (
+                      <div key={prod.id}>
+                        {/* Product without variants or as main entry */}
+                        {(!prod.variantes || prod.variantes.length === 0) ? (
+                          <button
+                            type="button"
+                            onClick={() => addProducto(prod)}
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors"
+                          >
+                            <p className="text-sm font-medium text-stone-800">{prod.nombre}</p>
+                            <p className="text-xs text-stone-400">
+                              {prod.sku && <span className="font-mono">{prod.sku} · </span>}
+                              {prod.precio_mayorista ? `$${Number(prod.precio_mayorista).toLocaleString("es-AR")}` : "Sin precio"}
+                            </p>
+                          </button>
+                        ) : (
+                          /* Product with variants — show each variant as selectable */
+                          <div>
+                            <p className="text-xs text-stone-400 px-3 pt-2 font-medium">{prod.nombre}</p>
+                            {prod.variantes.map((v: { id: string; nombre: string; sku: string | null; precio: number | null }) => (
+                              <button
+                                key={v.id}
+                                type="button"
+                                onClick={() => addProducto(prod, v)}
+                                className="w-full text-left px-3 py-1.5 pl-6 rounded-lg hover:bg-stone-50 transition-colors"
+                              >
+                                <p className="text-sm text-stone-700">{v.nombre}</p>
+                                <p className="text-xs text-stone-400">
+                                  {v.sku && <span className="font-mono">{v.sku} · </span>}
+                                  {v.precio ? `$${Number(v.precio).toLocaleString("es-AR")}` : prod.precio_mayorista ? `$${Number(prod.precio_mayorista).toLocaleString("es-AR")}` : "Sin precio"}
+                                </p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Totals footer */}
             <div className="px-4 py-3 border-t border-stone-200 bg-stone-50/50 space-y-2">
