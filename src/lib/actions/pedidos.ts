@@ -66,24 +66,10 @@ export async function getPedidosKanban() {
 export async function getPedido(id: string) {
   const supabase = await createClient()
 
-  // Main query with direct FK joins only
+  // Fetch pedido base data
   const { data, error } = await supabase
     .from("pedidos")
-    .select(`
-      *,
-      cliente:clientes(*),
-      items:items_pedido(
-        *,
-        producto:productos(nombre, sku),
-        variante:variantes(nombre)
-      ),
-      tareas(
-        *,
-        responsable:usuarios(id, nombre, rol),
-        subtareas(*)
-      ),
-      pagos(*)
-    `)
+    .select("*, cliente:clientes(*)")
     .eq("id", id)
     .single()
 
@@ -92,12 +78,29 @@ export async function getPedido(id: string) {
     throw new Error(error.message)
   }
 
-  // Fetch polymorphic relations separately
+  // Fetch all relations separately to avoid join ambiguity
   const [
+    { data: items },
+    { data: tareas },
+    { data: pagos },
     { data: historial },
     { data: comentarios },
     { data: archivos },
   ] = await Promise.all([
+    supabase
+      .from("items_pedido")
+      .select("*, producto:productos(nombre, sku), variante:variantes(nombre)")
+      .eq("pedido_id", id),
+    supabase
+      .from("tareas")
+      .select("*, responsable:usuarios(id, nombre, rol), subtareas(*)")
+      .eq("pedido_id", id)
+      .order("orden", { ascending: true }),
+    supabase
+      .from("pagos")
+      .select("*")
+      .eq("pedido_id", id)
+      .order("fecha", { ascending: true }),
     supabase
       .from("historial_pedido")
       .select("*, usuario:usuarios(id, nombre)")
@@ -129,7 +132,7 @@ export async function getPedido(id: string) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { ...data, historial, comentarios, archivos, tienda } as any
+  return { ...data, items, tareas, pagos, historial, comentarios, archivos, tienda } as any
 }
 
 export async function crearPedido(input: CrearPedidoInput) {
