@@ -1,4 +1,3 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { Header } from "@/components/layout/header"
 import { getCurrentUser } from "@/lib/actions/auth"
@@ -11,12 +10,12 @@ export default async function DashboardLayout({
   const user = await getCurrentUser()
 
   return (
-    <SidebarProvider>
+    <div className="flex min-h-screen bg-stone-50">
       <AppSidebar user={user} />
-      <SidebarInset>
+      <div className="flex flex-1 flex-col ml-[220px]">
         <Header />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+        <main className="flex-1 px-6 py-5 md:px-8">{children}</main>
+      </div>
+    </div>
   )
 }

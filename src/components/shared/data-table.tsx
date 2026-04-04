@@ -10,15 +10,6 @@ import {
   getSortedRowModel,
 } from "@tanstack/react-table"
 import { useState } from "react"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
 
 interface DataTableProps<TData, TValue> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,69 +39,72 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+      <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+        <table className="w-full">
+          <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <tr key={headerGroup.id} className="border-b border-stone-200">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <th
+                    key={header.id}
+                    className="text-xs text-stone-400 font-medium uppercase tracking-wide py-3 px-4 text-left bg-stone-50/50"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
+                  </th>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableHeader>
-          <TableBody>
+          </thead>
+          <tbody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
+              table.getRowModel().rows.map((row, idx) => (
+                <tr
                   key={row.id}
-                  className={onRowClick ? "cursor-pointer" : ""}
+                  className={`border-b border-stone-100 transition-colors ${
+                    onRowClick ? "cursor-pointer hover:bg-stone-100/60" : ""
+                  } ${idx % 2 === 0 ? "" : "bg-stone-50/50"}`}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <td key={cell.id} className="py-3 px-4 text-sm">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                    </td>
                   ))}
-                </TableRow>
+                </tr>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+              <tr>
+                <td colSpan={columns.length} className="h-24 text-center text-sm text-stone-400">
                   No hay resultados.
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-between py-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-stone-400">
             Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
           </p>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              className="text-sm text-stone-600 px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
               Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+            </button>
+            <button
+              className="text-sm text-stone-600 px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
               Siguiente
-            </Button>
+            </button>
           </div>
         </div>
       )}

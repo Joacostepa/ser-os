@@ -16,19 +16,6 @@ import {
   ShoppingBag,
   Boxes,
 } from "lucide-react"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
@@ -80,83 +67,88 @@ export function AppSidebar({ user }: AppSidebarProps) {
     .slice(0, 2) ?? "?"
 
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <PackageOpen className="h-4 w-4" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">SER Mayorista</span>
-            <span className="text-xs text-muted-foreground">Sistema de Gestión</span>
-          </div>
+    <aside className="fixed inset-y-0 left-0 z-30 w-[220px] bg-stone-50 border-r border-stone-200 flex flex-col">
+      {/* Logo */}
+      <div className="flex items-center gap-2 px-4 py-4">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-900 text-white">
+          <PackageOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
         </div>
-      </SidebarHeader>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-stone-900">SER Mayorista</span>
+          <span className="text-xs text-stone-400">Sistema de Gestión</span>
+        </div>
+      </div>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menú</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_ITEMS.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    isActive={isActive(item.href)}
-                    render={<Link href={item.href} />}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-2">
+        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-medium px-3 pt-2 pb-1">Menú</p>
+        <ul className="space-y-0.5">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-2 text-sm py-2 px-3 rounded-lg transition-colors ${
+                    active
+                      ? "font-medium text-stone-900 bg-stone-200/70"
+                      : "text-stone-600 hover:bg-stone-100"
+                  }`}
+                >
+                  <item.icon className={`h-4 w-4 ${active ? "text-stone-600" : "text-stone-400"}`} strokeWidth={1.5} />
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
 
         {user?.rol === "admin" && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administración</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {CONFIG_ITEMS.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      isActive={isActive(item.href)}
-                      render={<Link href={item.href} />}
+          <>
+            <p className="text-[10px] text-stone-400 uppercase tracking-wider font-medium px-3 pt-4 pb-1">Administración</p>
+            <ul className="space-y-0.5">
+              {CONFIG_ITEMS.map((item) => {
+                const active = isActive(item.href)
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-2 text-sm py-2 px-3 rounded-lg transition-colors ${
+                        active
+                          ? "font-medium text-stone-900 bg-stone-200/70"
+                          : "text-stone-600 hover:bg-stone-100"
+                      }`}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className={`h-4 w-4 ${active ? "text-stone-600" : "text-stone-400"}`} strokeWidth={1.5} />
                       <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
-      </SidebarContent>
+      </nav>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-1">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <span className="truncate text-sm font-medium">{user?.nombre}</span>
-                <span className="truncate text-xs text-muted-foreground capitalize">{user?.rol}</span>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                title="Cerrar sesión"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+      {/* Footer */}
+      <div className="border-t border-stone-200 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-stone-200 text-stone-600 text-xs font-medium flex items-center justify-center shrink-0">
+            {initials}
+          </div>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <span className="truncate text-sm font-medium text-stone-700">{user?.nombre}</span>
+            <span className="truncate text-xs text-stone-400 capitalize">{user?.rol}</span>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="text-stone-400 hover:text-stone-600 transition-colors"
+            title="Cerrar sesión"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+    </aside>
   )
 }

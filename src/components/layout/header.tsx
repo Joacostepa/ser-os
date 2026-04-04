@@ -2,18 +2,8 @@
 
 import { Bell } from "lucide-react"
 import { CotizacionDolar } from "@/components/shared/cotizacion-dolar"
-import { Button } from "@/components/ui/button"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 
 const BREADCRUMB_LABELS: Record<string, string> = {
   pedidos: "Pedidos",
@@ -28,7 +18,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   proveedores: "Proveedores",
   compras: "Compras",
   insumos: "Insumos",
-  reportes: "Reportes",
+  nuevo: "Nuevo",
 }
 
 export function Header() {
@@ -36,40 +26,36 @@ export function Header() {
   const segments = pathname.split("/").filter(Boolean)
 
   return (
-    <header className="flex h-14 items-center gap-2 border-b px-4">
-      <SidebarTrigger />
-      <Separator orientation="vertical" className="h-4" />
+    <header className="flex h-12 items-center gap-3 border-b border-stone-200 px-6 md:px-8 bg-white">
+      <nav className="flex-1 flex items-center text-sm">
+        <Link href="/" className="text-stone-400 hover:text-stone-600 transition-colors">
+          Inicio
+        </Link>
+        {segments.map((segment, index) => {
+          const href = "/" + segments.slice(0, index + 1).join("/")
+          const label = BREADCRUMB_LABELS[segment] || segment
+          const isLast = index === segments.length - 1
 
-      <Breadcrumb className="flex-1">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
-          </BreadcrumbItem>
-          {segments.map((segment, index) => {
-            const href = "/" + segments.slice(0, index + 1).join("/")
-            const label = BREADCRUMB_LABELS[segment] || segment
-            const isLast = index === segments.length - 1
-
-            return (
-              <span key={segment} className="contents">
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  {isLast ? (
-                    <BreadcrumbPage>{label}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink href={href}>{label}</BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-              </span>
-            )
-          })}
-        </BreadcrumbList>
-      </Breadcrumb>
+          return (
+            <span key={segment} className="flex items-center">
+              <span className="mx-1.5 text-stone-300">/</span>
+              {isLast ? (
+                <span className="text-stone-700 font-medium">{label}</span>
+              ) : (
+                <Link href={href} className="text-stone-400 hover:text-stone-600 transition-colors">
+                  {label}
+                </Link>
+              )}
+            </span>
+          )
+        })}
+      </nav>
 
       <CotizacionDolar />
-      <Button variant="ghost" size="icon" className="relative">
-        <Bell className="h-4 w-4" />
-      </Button>
+
+      <button className="text-stone-400 hover:text-stone-600 transition-colors p-1">
+        <Bell className="h-4 w-4" strokeWidth={1.5} />
+      </button>
     </header>
   )
 }

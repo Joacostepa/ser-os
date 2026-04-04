@@ -12,7 +12,7 @@ export const pedidosColumns: ColumnDef<any>[] = [
     accessorKey: "numero_tn",
     header: "# Pedido",
     cell: ({ row }) => (
-      <span className="font-medium">
+      <span className="text-stone-400 text-sm font-mono">
         {row.original.numero_tn || `#${row.original.id.slice(0, 8)}`}
       </span>
     ),
@@ -21,7 +21,7 @@ export const pedidosColumns: ColumnDef<any>[] = [
     accessorKey: "fecha_ingreso",
     header: "Fecha",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums">
+      <span className="text-stone-400 text-sm">
         {format(new Date(row.original.fecha_ingreso), "dd/MM/yyyy", { locale: es })}
       </span>
     ),
@@ -37,7 +37,7 @@ export const pedidosColumns: ColumnDef<any>[] = [
     accessorKey: "cliente",
     header: "Cliente",
     cell: ({ row }) => (
-      <span>{row.original.cliente?.nombre || "—"}</span>
+      <span className="text-stone-800 font-medium text-sm">{row.original.cliente?.nombre || "—"}</span>
     ),
   },
   {
@@ -59,15 +59,19 @@ export const pedidosColumns: ColumnDef<any>[] = [
     accessorKey: "fecha_comprometida",
     header: "Entrega",
     cell: ({ row }) =>
-      row.original.fecha_comprometida
-        ? format(new Date(row.original.fecha_comprometida), "dd MMM yyyy", { locale: es })
-        : "—",
+      row.original.fecha_comprometida ? (
+        <span className="text-stone-500 text-sm">
+          {format(new Date(row.original.fecha_comprometida), "dd MMM", { locale: es })}
+        </span>
+      ) : (
+        <span className="text-stone-300">—</span>
+      ),
   },
   {
     accessorKey: "monto_total",
     header: "Monto",
     cell: ({ row }) => (
-      <span className="tabular-nums">
+      <span className="text-stone-800 font-medium text-sm font-mono text-right block">
         ${Number(row.original.monto_total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
       </span>
     ),
@@ -77,10 +81,10 @@ export const pedidosColumns: ColumnDef<any>[] = [
     header: "USD",
     cell: ({ row }) => {
       const usd = row.original.monto_total_usd
-      if (!usd) return <span className="text-muted-foreground">—</span>
+      if (!usd) return <span className="text-stone-300">—</span>
       return (
-        <span className="tabular-nums text-green-700">
-          US${Number(usd).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+        <span className="text-green-700 text-sm font-mono text-right block">
+          US${Number(usd).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
         </span>
       )
     },
@@ -91,7 +95,9 @@ export const pedidosColumns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const saldo = Number(row.original.saldo_pendiente)
       return (
-        <span className={`tabular-nums ${saldo > 0 ? "text-red-600 font-medium" : "text-green-600"}`}>
+        <span className={`text-sm font-mono text-right block ${
+          saldo > 0 ? "text-red-500 font-medium" : "text-green-600"
+        }`}>
           ${saldo.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
         </span>
       )
