@@ -2,6 +2,11 @@
 -- 016: Tipos de pedido + Flujo configurable + Kanban configurable
 -- ============================================================
 
+-- Agregar nuevos valores al enum tipo_pedido
+ALTER TYPE tipo_pedido ADD VALUE IF NOT EXISTS 'logo_ser';
+ALTER TYPE tipo_pedido ADD VALUE IF NOT EXISTS 'marca_blanca';
+ALTER TYPE tipo_pedido ADD VALUE IF NOT EXISTS 'sin_clasificar';
+
 -- ============================================================
 -- Config etapas — configuración de cada estado
 -- ============================================================
