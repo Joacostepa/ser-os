@@ -1,12 +1,23 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ExternalLink } from "lucide-react"
+import { ArrowLeft, ExternalLink, Pencil } from "lucide-react"
 import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { ESTADOS_INTERNOS } from "@/lib/constants"
 import { TipoBadge } from "@/components/shared/status-badge"
 import type { EstadoInterno } from "@/types/database"
+
+const ESTADOS_EDITABLES = [
+  "nuevo",
+  "pendiente_de_sena",
+  "pendiente_sena",
+  "habilitado",
+  "en_prearmado",
+  "bloqueado",
+  "listo_para_armar",
+  "en_armado",
+]
 
 const ESTADO_PAGO_BADGE = {
   pagado: { label: "Pagado", className: "bg-[#EAF3DE] text-[#3B6D11] border-0" },
@@ -15,7 +26,8 @@ const ESTADO_PAGO_BADGE = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function OrderHeader({ pedido, onAvanzarEstado }: { pedido: any; onAvanzarEstado: () => void }) {
+export function OrderHeader({ pedido, onAvanzarEstado, userRol = "admin" }: { pedido: any; onAvanzarEstado: () => void; userRol?: string }) {
+  const canEdit = userRol === "admin" && ESTADOS_EDITABLES.includes(pedido.estado_interno)
   const estadoConfig = ESTADOS_INTERNOS[pedido.estado_interno as EstadoInterno]
 
   const saldo = Number(pedido.saldo_pendiente || 0)
@@ -48,6 +60,12 @@ export function OrderHeader({ pedido, onAvanzarEstado }: { pedido: any; onAvanza
             <Badge variant="secondary" className={pagoConfig.className}>
               {pagoConfig.label}
             </Badge>
+            {pedido.editado && (
+              <Badge variant="secondary" className="bg-stone-100 text-stone-500">
+                <Pencil className="h-2.5 w-2.5 mr-1" />
+                Modificado
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             {pedido.cliente?.nombre}
@@ -60,6 +78,14 @@ export function OrderHeader({ pedido, onAvanzarEstado }: { pedido: any; onAvanza
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {canEdit && (
+          <Link href={`/pedidos/${pedido.id}/editar`}>
+            <Button variant="ghost" size="sm">
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+              Editar pedido
+            </Button>
+          </Link>
+        )}
         {pedido.tienda_nube_id && pedido.tienda?.tienda_nube_store_id && (
           <a
             href={`https://${pedido.tienda.tienda_nube_store_id}.mitiendanube.com/admin/orders/${pedido.tienda_nube_id}`}

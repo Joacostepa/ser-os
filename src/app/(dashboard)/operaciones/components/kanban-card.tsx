@@ -2,7 +2,7 @@
 
 import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
-import { DollarSign, AlertTriangle, Clock } from "lucide-react"
+import { DollarSign, AlertTriangle, Clock, Pencil } from "lucide-react"
 import { TipoBadge } from "@/components/shared/status-badge"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,6 +59,7 @@ export function KanbanCard({ pedido, onClick }: { pedido: any; onClick: () => vo
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-mono text-stone-400">#{pedido.numero_tn || pedido.id.slice(0, 6)}</span>
+          {pedido.editado && <Pencil className="h-2.5 w-2.5 text-stone-300" />}
           <TipoBadge tipo={pedido.tipo || "sin_clasificar"} />
         </div>
         <span className={`h-2 w-2 rounded-full ${

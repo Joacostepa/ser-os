@@ -142,11 +142,16 @@ export interface Database {
           cotizacion_usd: number | null
           cotizacion_tipo: string | null
           monto_total_usd: number | null
+          descuento: number
+          costo_envio: number
+          editado: boolean
+          fecha_ultima_edicion: string | null
+          cantidad_ediciones: number
           codigo_seguimiento: string
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["pedidos"]["Row"], "id" | "created_at" | "updated_at" | "codigo_seguimiento" | "saldo_pendiente" | "cotizacion_usd" | "cotizacion_tipo" | "monto_total_usd"> & { cotizacion_usd?: number | null; cotizacion_tipo?: string | null; monto_total_usd?: number | null }
+        Insert: Omit<Database["public"]["Tables"]["pedidos"]["Row"], "id" | "created_at" | "updated_at" | "codigo_seguimiento" | "saldo_pendiente" | "cotizacion_usd" | "cotizacion_tipo" | "monto_total_usd" | "editado" | "fecha_ultima_edicion" | "cantidad_ediciones" | "descuento" | "costo_envio"> & { cotizacion_usd?: number | null; cotizacion_tipo?: string | null; monto_total_usd?: number | null; editado?: boolean; fecha_ultima_edicion?: string | null; cantidad_ediciones?: number; descuento?: number; costo_envio?: number }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
       }
       items_pedido: {
@@ -570,6 +575,30 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["gastos"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Database["public"]["Tables"]["gastos"]["Insert"]>
+      }
+      pedido_snapshot_tn: {
+        Row: {
+          id: string
+          pedido_id: string
+          items: string
+          monto_total: number
+          monto_neto: number | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["pedido_snapshot_tn"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["pedido_snapshot_tn"]["Insert"]>
+      }
+      pedido_ediciones: {
+        Row: {
+          id: string
+          pedido_id: string
+          motivo: string
+          tipo_cambio: string
+          detalle: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["pedido_ediciones"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["pedido_ediciones"]["Insert"]>
       }
     }
     Views: Record<string, never>

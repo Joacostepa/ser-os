@@ -3,6 +3,7 @@ import { ESTADO_INTERNO_A_PUBLICO } from "@/lib/constants"
 import type { EstadoInterno } from "@/types/database"
 import { getCotizacionVenta } from "@/lib/dolar-api"
 import { calcularNeto, calcularIVA } from "@/lib/iva"
+import { guardarSnapshot } from "@/lib/pedidos/snapshot-tn"
 
 export async function handleOrderCreated(ctx: WebhookContext) {
   const { client, supabase, tienda, resourceId } = ctx
@@ -118,6 +119,20 @@ export async function handleOrderCreated(ctx: WebhookContext) {
     }
 
     await supabase.from("items_pedido").insert(items)
+
+    // Save original TN snapshot
+    await guardarSnapshot(
+      pedido.id,
+      items.map((i) => ({
+        descripcion: i.descripcion,
+        cantidad: i.cantidad,
+        precio_unitario: i.precio_unitario,
+        producto_id: i.producto_id,
+        variante_id: i.variante_id,
+      })),
+      montoTotal,
+      calcularNeto(montoTotal)
+    )
   }
 
   // Log in history
