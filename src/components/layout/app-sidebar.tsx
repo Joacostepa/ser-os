@@ -15,12 +15,14 @@ import {
   Truck,
   ShoppingBag,
   Boxes,
+  Zap,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Operaciones", href: "/operaciones", icon: Zap },
   { label: "Pedidos", href: "/pedidos", icon: ShoppingCart },
   { label: "Tareas", href: "/tareas", icon: CheckSquare },
   { label: "Productos", href: "/productos", icon: Package },
