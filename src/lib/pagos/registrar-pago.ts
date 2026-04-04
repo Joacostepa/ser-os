@@ -125,16 +125,17 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
           ],
         })
 
-        // Calculate CMV from items_pedido
-        const { data: items } = await supabase
-          .from("items_pedido")
-          .select("costo_unitario, cantidad")
-          .eq("pedido_id", input.pedido_id)
+        // Calculate CMV using costeo library
+        const { calcularCostoPedido } = await import("@/lib/costeo")
+        const costeo = await calcularCostoPedido(input.pedido_id)
+        const cmv = costeo.costo_total
 
-        const cmv = (items || []).reduce(
-          (sum, item) => sum + (Number(item.costo_unitario || 0) * Number(item.cantidad)),
-          0,
-        )
+        if (!costeo.pedido_costeo_completo) {
+          console.warn(
+            `CMV pedido #${numeroPedido}: costeo incompleto.`,
+            costeo.alertas,
+          )
+        }
 
         if (cmv > 0) {
           // CMV asiento: CMV (5.1.1) debe / Inventario (1.1.3) haber

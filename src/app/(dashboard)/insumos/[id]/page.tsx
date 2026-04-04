@@ -124,6 +124,74 @@ export default async function InsumoDetailPage({
         <AjusteStock insumoId={insumo.id} unidadShort={unidadConfig?.short || "u"} />
       )}
 
+      {/* Historial de costos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Historial de costos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {insumo.historial_costos?.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Costo anterior</TableHead>
+                  <TableHead className="text-right">Costo nuevo</TableHead>
+                  <TableHead className="text-right">Variacion</TableHead>
+                  <TableHead>Motivo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {insumo.historial_costos.map((h: any) => {
+                  const anterior = Number(h.costo_anterior)
+                  const nuevo = Number(h.costo_nuevo)
+                  const variacion = anterior > 0
+                    ? ((nuevo - anterior) / anterior) * 100
+                    : 0
+                  const variacionColor = variacion > 0
+                    ? "text-red-600"
+                    : variacion < 0
+                      ? "text-green-600"
+                      : "text-stone-500"
+                  return (
+                    <TableRow key={h.id}>
+                      <TableCell className="tabular-nums">
+                        {format(new Date(h.created_at), "dd/MM/yy HH:mm", { locale: es })}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        ${anterior.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums font-medium">
+                        ${nuevo.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <Badge variant="secondary" className={
+                          variacion > 0
+                            ? "bg-red-100 text-red-700"
+                            : variacion < 0
+                              ? "bg-green-100 text-green-700"
+                              : "bg-stone-100 text-stone-500"
+                        }>
+                          <span className={variacionColor}>
+                            {variacion > 0 ? "+" : ""}{variacion.toFixed(1)}%
+                          </span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                        {h.motivo || "—"}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">No hay cambios de costo registrados</p>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Movimientos de stock</CardTitle>

@@ -32,10 +32,12 @@ interface RecetaItem {
 export function RecetaEditor({
   productoId,
   productoNombre,
+  precioMayorista,
   recetaActual,
 }: {
   productoId: string
   productoNombre: string
+  precioMayorista?: number | null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recetaActual: any | null
 }) {
@@ -177,6 +179,59 @@ export function RecetaEditor({
                 <p className="text-sm font-medium">
                   Costo total: <span className="text-lg">${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
                 </p>
+              </div>
+
+              {/* Costeo section */}
+              <div className="mt-4 pt-4 border-t space-y-2">
+                <p className="text-sm font-medium text-stone-800">Costeo</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Costo unitario</p>
+                    <p className="text-base font-mono font-medium">
+                      ${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Precio de venta</p>
+                    <p className="text-base font-mono font-medium">
+                      {precioMayorista
+                        ? `$${Number(precioMayorista).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Margen bruto</p>
+                    {precioMayorista && precioMayorista > 0 ? (() => {
+                      const margen = Number(precioMayorista) - costoTotal
+                      const margenPct = (margen / Number(precioMayorista)) * 100
+                      const badgeClass = margenPct >= 40
+                        ? "bg-green-100 text-green-700"
+                        : margenPct >= 20
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-red-100 text-red-700"
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-mono font-medium">
+                            ${margen.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                          </span>
+                          <Badge variant="secondary" className={badgeClass}>
+                            {margenPct.toFixed(1)}%
+                          </Badge>
+                        </div>
+                      )
+                    })() : (
+                      <p className="text-base font-mono font-medium text-muted-foreground">—</p>
+                    )}
+                  </div>
+                </div>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {recetaActual?.items?.some((item: any) => Number(item.insumo?.costo_unitario || 0) === 0) && (
+                  <div className="rounded-md bg-amber-50 border border-amber-200 p-2 mt-2">
+                    <p className="text-sm text-amber-800">
+                      Algunos insumos tienen costo $0. El costeo puede no ser exacto.
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           ) : (

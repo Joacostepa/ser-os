@@ -176,6 +176,7 @@ export default async function ProductoDetailPage({
       <RecetaEditor
         productoId={producto.id}
         productoNombre={producto.nombre}
+        precioMayorista={producto.precio_mayorista}
         recetaActual={receta}
       />
     </div>

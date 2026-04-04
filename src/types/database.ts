@@ -481,6 +481,18 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["movimientos_stock"]["Row"], "id" | "created_at">
         Update: Partial<Database["public"]["Tables"]["movimientos_stock"]["Insert"]>
       }
+      historial_costos_insumo: {
+        Row: {
+          id: string
+          insumo_id: string
+          costo_anterior: number
+          costo_nuevo: number
+          motivo: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["historial_costos_insumo"]["Row"], "id" | "created_at">
+        Update: Partial<Database["public"]["Tables"]["historial_costos_insumo"]["Insert"]>
+      }
       cuentas: {
         Row: {
           id: number

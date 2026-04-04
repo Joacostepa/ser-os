@@ -49,10 +49,14 @@ export async function getInsumo(id: string) {
       movimientos:movimientos_stock(
         id, tipo, cantidad, stock_anterior, stock_posterior,
         referencia_tipo, referencia_id, notas, created_at
+      ),
+      historial_costos:historial_costos_insumo(
+        id, costo_anterior, costo_nuevo, motivo, created_at
       )
     `)
     .eq("id", id)
     .order("created_at", { referencedTable: "movimientos_stock", ascending: false })
+    .order("created_at", { referencedTable: "historial_costos_insumo", ascending: false })
     .single()
 
   if (error) throw new Error(error.message)
