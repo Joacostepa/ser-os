@@ -4,14 +4,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 
-export type Period = "this_week" | "this_month" | "last_month" | "last_3_months" | "this_year"
+export type Period = "today" | "last_7_days" | "last_30_days" | "last_quarter" | "last_year"
 
 const PERIODS: { value: Period; label: string }[] = [
-  { value: "this_week", label: "Esta semana" },
-  { value: "this_month", label: "Este mes" },
-  { value: "last_month", label: "Último mes" },
-  { value: "last_3_months", label: "Últimos 3 meses" },
-  { value: "this_year", label: "Este año" },
+  { value: "today", label: "Hoy" },
+  { value: "last_7_days", label: "Últimos 7 días" },
+  { value: "last_30_days", label: "Últimos 30 días" },
+  { value: "last_quarter", label: "Último trimestre" },
+  { value: "last_year", label: "Último año" },
 ]
 
 export function getPeriodDates(period: Period): { desde: string; hasta: string } {
@@ -19,29 +19,45 @@ export function getPeriodDates(period: Period): { desde: string; hasta: string }
   const hasta = now.toISOString()
 
   switch (period) {
-    case "this_week": {
+    case "today": {
       const start = new Date(now)
-      start.setDate(now.getDate() - now.getDay())
       start.setHours(0, 0, 0, 0)
       return { desde: start.toISOString(), hasta }
     }
-    case "this_month": {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+    case "last_7_days": {
+      const start = new Date(now)
+      start.setDate(now.getDate() - 7)
+      start.setHours(0, 0, 0, 0)
       return { desde: start.toISOString(), hasta }
     }
-    case "last_month": {
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
-      return { desde: start.toISOString(), hasta: end.toISOString() }
-    }
-    case "last_3_months": {
-      const start = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    case "last_30_days": {
+      const start = new Date(now)
+      start.setDate(now.getDate() - 30)
+      start.setHours(0, 0, 0, 0)
       return { desde: start.toISOString(), hasta }
     }
-    case "this_year": {
+    case "last_quarter": {
+      const start = new Date(now)
+      start.setMonth(now.getMonth() - 3)
+      start.setDate(1)
+      start.setHours(0, 0, 0, 0)
+      return { desde: start.toISOString(), hasta }
+    }
+    case "last_year": {
       const start = new Date(now.getFullYear(), 0, 1)
       return { desde: start.toISOString(), hasta }
     }
+  }
+}
+
+export function getPreviousPeriodDates(period: Period): { desde: string; hasta: string } {
+  const { desde, hasta } = getPeriodDates(period)
+  const desdeDt = new Date(desde)
+  const hastaDt = new Date(hasta)
+  const duracionMs = hastaDt.getTime() - desdeDt.getTime()
+  return {
+    desde: new Date(desdeDt.getTime() - duracionMs).toISOString(),
+    hasta: desde,
   }
 }
 

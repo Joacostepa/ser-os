@@ -2,7 +2,8 @@
 -- 005: Insumos + BOM (Recetas) + Movimientos de Stock
 -- ============================================================
 
--- Enums
+-- Enums (tipo_movimiento_stock was defined in TS but never created in DB)
+CREATE TYPE tipo_movimiento_stock AS ENUM ('entrada', 'salida', 'ajuste', 'devolucion');
 CREATE TYPE tipo_insumo AS ENUM ('material', 'servicio');
 CREATE TYPE unidad_insumo AS ENUM ('unidades', 'metros', 'kg', 'rollos', 'horas', 'ml', 'litros');
 CREATE TYPE referencia_movimiento AS ENUM ('compra', 'pedido', 'ajuste_manual');
