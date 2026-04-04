@@ -3,6 +3,7 @@
 import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { DollarSign, AlertTriangle, Clock } from "lucide-react"
+import { TipoBadge } from "@/components/shared/status-badge"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function KanbanCard({ pedido, onClick }: { pedido: any; onClick: () => void }) {
@@ -32,9 +33,12 @@ export function KanbanCard({ pedido, onClick }: { pedido: any; onClick: () => vo
     ? Math.floor((Date.now() - new Date(pedido.fecha_ingreso).getTime()) / 86400000)
     : 0
 
+  const sinClasificar = !pedido.tipo || pedido.tipo === "sin_clasificar"
+
   // Border left for priority/blocked
   let borderLeft = ""
-  if (["esperando_insumos", "esperando_diseno"].includes(estado)) borderLeft = "border-l-[3px] border-l-red-400 bg-red-50/30"
+  if (sinClasificar) borderLeft = "border border-dashed border-amber-300"
+  else if (["esperando_insumos", "esperando_diseno"].includes(estado)) borderLeft = "border-l-[3px] border-l-red-400 bg-red-50/30"
   else if (prioridad === "urgente") borderLeft = "border-l-[3px] border-l-red-500"
   else if (prioridad === "alta") borderLeft = "border-l-[3px] border-l-amber-500"
 
@@ -55,9 +59,7 @@ export function KanbanCard({ pedido, onClick }: { pedido: any; onClick: () => vo
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-mono text-stone-400">#{pedido.numero_tn || pedido.id.slice(0, 6)}</span>
-          {pedido.tipo === "personalizado" && (
-            <span className="text-[10px] font-medium bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded">Pers.</span>
-          )}
+          <TipoBadge tipo={pedido.tipo || "sin_clasificar"} />
         </div>
         <span className={`h-2 w-2 rounded-full ${
           prioridad === "urgente" ? "bg-red-500" : prioridad === "alta" ? "bg-amber-500" : "bg-stone-300"

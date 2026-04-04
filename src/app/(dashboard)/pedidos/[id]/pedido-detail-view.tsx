@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { OrderHeader } from "./components/order-header"
+import { ClasificacionBanner } from "@/components/pedidos/clasificacion-banner"
 import { AlertBar } from "./components/alert-bar"
 import { ProgressBarComponent } from "./components/progress-bar"
 import { ProductsCard } from "./components/products-card"
@@ -18,6 +20,7 @@ import { DashboardCard } from "@/components/reportes/dashboard-card"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function PedidoDetailView({ pedido }: { pedido: any }) {
   const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const router = useRouter()
 
   const tareasCompletadas = pedido.tareas?.filter(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,6 +32,15 @@ export function PedidoDetailView({ pedido }: { pedido: any }) {
     <div className="space-y-5">
       {/* Header */}
       <OrderHeader pedido={pedido} onAvanzarEstado={() => setStatusModalOpen(true)} />
+
+      {/* Banner de clasificacion */}
+      {pedido.tipo === "sin_clasificar" &&
+        ["nuevo", "pendiente_de_sena", "pendiente_sena"].includes(pedido.estado_interno) && (
+          <ClasificacionBanner
+            pedidoId={pedido.id}
+            onClassify={() => router.refresh()}
+          />
+        )}
 
       {/* Alertas */}
       <AlertBar pedido={pedido} />

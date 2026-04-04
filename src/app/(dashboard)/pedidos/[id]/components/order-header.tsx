@@ -5,6 +5,7 @@ import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { ESTADOS_INTERNOS } from "@/lib/constants"
+import { TipoBadge } from "@/components/shared/status-badge"
 import type { EstadoInterno } from "@/types/database"
 
 const ESTADO_PAGO_BADGE = {
@@ -40,9 +41,7 @@ export function OrderHeader({ pedido, onAvanzarEstado }: { pedido: any; onAvanza
             <h1 className="text-xl font-medium">
               Pedido #{pedido.numero_tn || pedido.id.slice(0, 8)}
             </h1>
-            <Badge variant="secondary" className={pedido.tipo === "personalizado" ? "bg-[#EEEDFE] text-[#534AB7] border-0" : "bg-[#E6F1FB] text-[#185FA5] border-0"}>
-              {pedido.tipo === "personalizado" ? "Personalizado" : "Estándar"}
-            </Badge>
+            <TipoBadge tipo={pedido.tipo || "sin_clasificar"} />
             <Badge variant="secondary" className={estadoConfig?.bgColor}>
               {estadoConfig?.label}
             </Badge>

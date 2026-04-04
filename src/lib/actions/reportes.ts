@@ -56,7 +56,7 @@ export async function getAlertasActivas() {
   const hace3dias = new Date(hoy.getTime() - 3 * 86400000).toISOString()
   const hace5dias = new Date(hoy.getTime() - 5 * 86400000).toISOString()
 
-  const [{ data: sinSena }, { data: insumosStock }, { data: tareasVencidas }, { data: listosDespacho }, { data: sinCobrar }] = await Promise.all([
+  const [{ data: sinSena }, { data: insumosStock }, { data: tareasVencidas }, { data: listosDespacho }, { data: sinCobrar }, { count: sinClasificar }] = await Promise.all([
     // Pedidos sin seña hace 3+ días
     supabase.from("pedidos").select("id, numero_tn").eq("estado_interno", "pendiente_sena").lt("created_at", hace3dias),
     // Insumos bajo mínimo
@@ -69,6 +69,10 @@ export async function getAlertasActivas() {
     // Pedidos armados sin cobrar 5+ días
     supabase.from("pedidos").select("id, numero_tn, saldo_pendiente")
       .eq("estado_interno", "pendiente_saldo").lt("updated_at", hace5dias).gt("saldo_pendiente", 0),
+    // Pedidos sin clasificar
+    supabase.from("pedidos").select("id", { count: "exact", head: true })
+      .eq("tipo", "sin_clasificar")
+      .not("estado_interno", "in", '("cancelado","cerrado")'),
   ])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,6 +100,11 @@ export async function getAlertasActivas() {
   tareasVencidas?.slice(0, 3).forEach((t: any) => {
     alertas.push({ type: "amber", text: `Tarea "${t.titulo}" vencida — Pedido #${t.pedido?.numero_tn || ""}`, href: t.pedido_id ? `/pedidos/${t.pedido_id}` : undefined })
   })
+
+  // Amber: pedidos sin clasificar
+  if (sinClasificar && sinClasificar > 0) {
+    alertas.push({ type: "amber", text: `${sinClasificar} pedido${sinClasificar > 1 ? "s" : ""} sin clasificar. Clasificalos para poder habilitarlos.`, href: "/pedidos" })
+  }
 
   // Blue: listos para despachar
   if (listosDespacho && listosDespacho.length > 0) {

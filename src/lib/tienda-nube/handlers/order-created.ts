@@ -27,13 +27,14 @@ export async function handleOrderCreated(ctx: WebhookContext) {
   // Find or create customer (dedup by email across stores)
   const clienteId = await findOrCreateCliente(ctx, order)
 
-  // Determine order type
-  // Default: estandar. Can be reclassified manually later.
-  const tipo = "estandar" as const
+  // Orders arrive as sin_clasificar — Sheila must classify before enabling
+  const tipo = "sin_clasificar"
 
   // Determine payment status
+  // Paid orders stay in 'nuevo' (not auto-habilitado) until classified
+  // Unpaid orders go to 'pendiente_de_sena'
   const isPaid = order.payment_status === "paid"
-  const estadoInterno: EstadoInterno = isPaid ? "sena_recibida" : "nuevo"
+  const estadoInterno: EstadoInterno = isPaid ? "nuevo" : "pendiente_de_sena"
   const estadoPublico = ESTADO_INTERNO_A_PUBLICO[estadoInterno]
 
   const montoTotal = parseFloat(order.total || "0")
@@ -126,13 +127,7 @@ export async function handleOrderCreated(ctx: WebhookContext) {
     estado_nuevo: estadoInterno,
   })
 
-  // If paid, generate tasks
-  if (isPaid) {
-    await supabase.rpc("generar_tareas_pedido", {
-      p_pedido_id: pedido.id,
-      p_tipo: tipo,
-    })
-  }
+  // Tasks are generated after classification + habilitacion, not on order creation
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
