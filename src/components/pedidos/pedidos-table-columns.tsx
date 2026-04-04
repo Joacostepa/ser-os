@@ -18,11 +18,11 @@ export const pedidosColumns: ColumnDef<any>[] = [
     ),
   },
   {
-    accessorKey: "created_at",
+    accessorKey: "fecha_ingreso",
     header: "Fecha",
     cell: ({ row }) => (
       <span className="text-sm tabular-nums">
-        {format(new Date(row.original.created_at), "dd/MM/yyyy", { locale: es })}
+        {format(new Date(row.original.fecha_ingreso), "dd/MM/yyyy", { locale: es })}
       </span>
     ),
   },

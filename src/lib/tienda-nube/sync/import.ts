@@ -286,6 +286,11 @@ export async function importOrders(tiendaId: string, jobId: string) {
             .single()
 
           if (existing) {
+            // Update fecha_ingreso if missing
+            await supabase
+              .from("pedidos")
+              .update({ fecha_ingreso: order.created_at })
+              .eq("id", existing.id)
             processed++
             continue
           }
@@ -317,6 +322,7 @@ export async function importOrders(tiendaId: string, jobId: string) {
               prioridad: "normal",
               monto_total: montoTotal,
               monto_pagado: montoPagado,
+              fecha_ingreso: order.created_at,
               tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
               datos_envio: order.shipping_address,
               observaciones: order.note || null,

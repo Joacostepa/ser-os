@@ -51,6 +51,7 @@ export async function handleOrderCreated(ctx: WebhookContext) {
       prioridad: "normal",
       monto_total: montoTotal,
       monto_pagado: montoPagado,
+      fecha_ingreso: order.created_at,
       tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
       datos_envio: order.shipping_address,
       observaciones: order.note || null,
