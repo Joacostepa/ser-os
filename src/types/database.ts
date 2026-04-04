@@ -204,6 +204,13 @@ export interface Database {
           comprobante_url: string | null
           fecha: string
           notas: string | null
+          tipo_pago: string | null
+          origen: string | null
+          referencia_externa: string | null
+          numero_recibo: string | null
+          recibo_url: string | null
+          asiento_venta_id: number | null
+          asiento_cobro_id: number | null
           created_at: string
         }
         Insert: Omit<Database["public"]["Tables"]["pagos"]["Row"], "id" | "created_at">
