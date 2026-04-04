@@ -17,9 +17,12 @@ import {
   Boxes,
   Zap,
   Wallet,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -36,7 +39,7 @@ const NAV_ITEMS = [
 ]
 
 const CONFIG_ITEMS = [
-  { label: "Configuración", href: "/configuracion", icon: Settings },
+  { label: "Configuraci\u00f3n", href: "/configuracion", icon: Settings },
 ]
 
 interface AppSidebarProps {
@@ -45,9 +48,113 @@ interface AppSidebarProps {
     email: string
     rol: string
   } | null
+  collapsed: boolean
+  onToggle: () => void
+  mobileOpen: boolean
+  onMobileClose: () => void
 }
 
-export function AppSidebar({ user }: AppSidebarProps) {
+function NavItem({
+  item,
+  active,
+  collapsed,
+  isMobile,
+  onMobileClose,
+}: {
+  item: (typeof NAV_ITEMS)[number]
+  active: boolean
+  collapsed: boolean
+  isMobile: boolean
+  onMobileClose: () => void
+}) {
+  const [showTooltip, setShowTooltip] = useState(false)
+  const effectiveCollapsed = isMobile ? false : collapsed
+
+  return (
+    <li className="relative">
+      <Link
+        href={item.href}
+        onClick={isMobile ? onMobileClose : undefined}
+        onMouseEnter={() => {
+          if (effectiveCollapsed) setShowTooltip(true)
+        }}
+        onMouseLeave={() => setShowTooltip(false)}
+        className="flex items-center gap-2.5 py-2 px-3 rounded-lg transition-colors"
+        style={{
+          justifyContent: effectiveCollapsed ? "center" : "flex-start",
+          color: active ? "#e8e6df" : "#a0b0a2",
+          backgroundColor: active
+            ? "rgba(255,255,255,0.12)"
+            : "transparent",
+          fontWeight: active ? 500 : 400,
+          fontSize: "13px",
+        }}
+        onMouseOver={(e) => {
+          if (!active) {
+            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)"
+          }
+        }}
+        onMouseOut={(e) => {
+          if (!active) {
+            e.currentTarget.style.backgroundColor = "transparent"
+          }
+        }}
+      >
+        <item.icon
+          className="shrink-0"
+          style={{
+            width: 18,
+            height: 18,
+            color: active ? "#c4d4c6" : "#8a9a8c",
+          }}
+          strokeWidth={1.5}
+        />
+        <span
+          className="whitespace-nowrap transition-all duration-200"
+          style={{
+            overflow: "hidden",
+            width: effectiveCollapsed ? 0 : "auto",
+            opacity: effectiveCollapsed ? 0 : 1,
+          }}
+        >
+          {item.label}
+        </span>
+      </Link>
+      {/* Tooltip in collapsed mode */}
+      {effectiveCollapsed && showTooltip && (
+        <div
+          className="fixed z-[100] px-2 py-1 rounded text-xs text-white pointer-events-none"
+          style={{
+            left: 68,
+            top: "auto",
+            backgroundColor: "#1c1917",
+            transform: "translateY(-50%)",
+            marginTop: -1,
+          }}
+          ref={(el) => {
+            if (el && el.parentElement) {
+              const linkRect =
+                el.parentElement.querySelector("a")?.getBoundingClientRect()
+              if (linkRect) {
+                el.style.top = `${linkRect.top + linkRect.height / 2}px`
+              }
+            }
+          }}
+        >
+          {item.label}
+        </div>
+      )}
+    </li>
+  )
+}
+
+export function AppSidebar({
+  user,
+  collapsed,
+  onToggle,
+  mobileOpen,
+  onMobileClose,
+}: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -63,96 +170,239 @@ export function AppSidebar({ user }: AppSidebarProps) {
     router.refresh()
   }
 
-  const initials = user?.nombre
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) ?? "?"
+  const initials =
+    user?.nombre
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) ?? "?"
+
+  const sidebarContent = (isMobile: boolean) => {
+    const effectiveCollapsed = isMobile ? false : collapsed
+
+    return (
+      <>
+        {/* Header */}
+        <div
+          className="flex items-center px-4 py-4"
+          style={{
+            justifyContent: effectiveCollapsed ? "center" : "flex-start",
+            gap: effectiveCollapsed ? 0 : 8,
+          }}
+        >
+          <div
+            className="flex items-center justify-center rounded-lg shrink-0"
+            style={{
+              width: 32,
+              height: 32,
+              backgroundColor: "#576259",
+            }}
+          >
+            <PackageOpen
+              style={{ width: 16, height: 16, color: "#e8e6df" }}
+              strokeWidth={1.5}
+            />
+          </div>
+          <div
+            className="flex flex-col overflow-hidden transition-all duration-200"
+            style={{
+              width: effectiveCollapsed ? 0 : "auto",
+              opacity: effectiveCollapsed ? 0 : 1,
+            }}
+          >
+            <span
+              className="text-sm font-medium whitespace-nowrap"
+              style={{ color: "#e8e6df" }}
+            >
+              SER Mayorista
+            </span>
+            <span
+              className="text-xs whitespace-nowrap"
+              style={{ color: "#6b7b6d" }}
+            >
+              Sistema de gesti&oacute;n
+            </span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
+          {!effectiveCollapsed && (
+            <p
+              className="text-[10px] uppercase tracking-wider font-medium px-3 pt-2 pb-1"
+              style={{ color: "#6b7b6d" }}
+            >
+              Men&uacute;
+            </p>
+          )}
+          <ul className="space-y-0.5">
+            {NAV_ITEMS.map((item) => (
+              <NavItem
+                key={item.href}
+                item={item}
+                active={isActive(item.href)}
+                collapsed={collapsed}
+                isMobile={isMobile}
+                onMobileClose={onMobileClose}
+              />
+            ))}
+          </ul>
+
+          {user?.rol === "admin" && (
+            <>
+              {!effectiveCollapsed && (
+                <p
+                  className="text-[10px] uppercase tracking-wider font-medium px-3 pt-4 pb-1"
+                  style={{ color: "#6b7b6d" }}
+                >
+                  Administraci&oacute;n
+                </p>
+              )}
+              {effectiveCollapsed && <div className="pt-3" />}
+              <ul className="space-y-0.5">
+                {CONFIG_ITEMS.map((item) => (
+                  <NavItem
+                    key={item.href}
+                    item={item}
+                    active={isActive(item.href)}
+                    collapsed={collapsed}
+                    isMobile={isMobile}
+                    onMobileClose={onMobileClose}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </nav>
+
+        {/* Footer */}
+        <div
+          className="px-3 py-3"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <div
+            className="flex items-center"
+            style={{
+              justifyContent: effectiveCollapsed ? "center" : "flex-start",
+              gap: effectiveCollapsed ? 0 : 8,
+            }}
+          >
+            <div
+              className="h-8 w-8 rounded-full text-xs font-medium flex items-center justify-center shrink-0"
+              style={{ backgroundColor: "#576259", color: "#e8e6df" }}
+            >
+              {initials}
+            </div>
+            <div
+              className="flex flex-1 flex-col overflow-hidden transition-all duration-200"
+              style={{
+                width: effectiveCollapsed ? 0 : "auto",
+                opacity: effectiveCollapsed ? 0 : 1,
+              }}
+            >
+              <span
+                className="truncate text-sm font-medium"
+                style={{ color: "#e8e6df" }}
+              >
+                {user?.nombre}
+              </span>
+              <span
+                className="truncate text-xs capitalize"
+                style={{ color: "#6b7b6d" }}
+              >
+                {user?.rol}
+              </span>
+            </div>
+            {!effectiveCollapsed && (
+              <button
+                onClick={handleSignOut}
+                className="transition-colors p-1"
+                style={{ color: "#6b7b6d" }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = "#a0b0a2"
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = "#6b7b6d"
+                }}
+                title="Cerrar sesi&oacute;n"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            )}
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 w-[220px] bg-stone-50 border-r border-stone-200 flex flex-col">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-4 py-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-900 text-white">
-          <PackageOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-stone-900">SER Mayorista</span>
-          <span className="text-xs text-stone-400">Sistema de Gestión</span>
-        </div>
-      </div>
+    <>
+      {/* Desktop sidebar */}
+      <aside
+        className="fixed inset-y-0 left-0 z-30 hidden md:flex flex-col"
+        style={{
+          width: collapsed ? 64 : 220,
+          backgroundColor: "#3d4a3e",
+          transition: "width 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      >
+        {sidebarContent(false)}
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2">
-        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-medium px-3 pt-2 pb-1">Menú</p>
-        <ul className="space-y-0.5">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(item.href)
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-2 text-sm py-2 px-3 rounded-lg transition-colors ${
-                    active
-                      ? "font-medium text-stone-900 bg-stone-200/70"
-                      : "text-stone-600 hover:bg-stone-100"
-                  }`}
-                >
-                  <item.icon className={`h-4 w-4 ${active ? "text-stone-600" : "text-stone-400"}`} strokeWidth={1.5} />
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+        {/* Toggle button */}
+        <button
+          onClick={onToggle}
+          className="absolute flex items-center justify-center"
+          style={{
+            top: 28,
+            right: -12,
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            backgroundColor: "#3d4a3e",
+            border: "2px solid #fafaf7",
+            color: "#e8e6df",
+            cursor: "pointer",
+            zIndex: 40,
+            transition: "background-color 150ms",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = "#4a584c"
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = "#3d4a3e"
+          }}
+          aria-label={collapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight style={{ width: 14, height: 14 }} strokeWidth={2} />
+          ) : (
+            <ChevronLeft style={{ width: 14, height: 14 }} strokeWidth={2} />
+          )}
+        </button>
+      </aside>
 
-        {user?.rol === "admin" && (
-          <>
-            <p className="text-[10px] text-stone-400 uppercase tracking-wider font-medium px-3 pt-4 pb-1">Administración</p>
-            <ul className="space-y-0.5">
-              {CONFIG_ITEMS.map((item) => {
-                const active = isActive(item.href)
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-2 text-sm py-2 px-3 rounded-lg transition-colors ${
-                        active
-                          ? "font-medium text-stone-900 bg-stone-200/70"
-                          : "text-stone-600 hover:bg-stone-100"
-                      }`}
-                    >
-                      <item.icon className={`h-4 w-4 ${active ? "text-stone-600" : "text-stone-400"}`} strokeWidth={1.5} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </>
-        )}
-      </nav>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          onClick={onMobileClose}
+        />
+      )}
 
-      {/* Footer */}
-      <div className="border-t border-stone-200 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-stone-200 text-stone-600 text-xs font-medium flex items-center justify-center shrink-0">
-            {initials}
-          </div>
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <span className="truncate text-sm font-medium text-stone-700">{user?.nombre}</span>
-            <span className="truncate text-xs text-stone-400 capitalize">{user?.rol}</span>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="text-stone-400 hover:text-stone-600 transition-colors"
-            title="Cerrar sesión"
-          >
-            <LogOut className="h-4 w-4" strokeWidth={1.5} />
-          </button>
-        </div>
-      </div>
-    </aside>
+      {/* Mobile drawer */}
+      <aside
+        className="fixed inset-y-0 left-0 z-50 flex flex-col md:hidden"
+        style={{
+          width: 280,
+          backgroundColor: "#3d4a3e",
+          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      >
+        {sidebarContent(true)}
+      </aside>
+    </>
   )
 }
