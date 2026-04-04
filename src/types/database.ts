@@ -147,6 +147,8 @@ export interface Database {
           numero_tn: string | null
           tienda_nube_id: string | null
           cliente_id: string
+          canal: string | null
+          numero_interno: string | null
           tipo: TipoPedido
           estado_interno: EstadoInterno
           estado_publico: EstadoPublico
@@ -173,7 +175,7 @@ export interface Database {
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["pedidos"]["Row"], "id" | "created_at" | "updated_at" | "codigo_seguimiento" | "saldo_pendiente" | "cotizacion_usd" | "cotizacion_tipo" | "monto_total_usd" | "editado" | "fecha_ultima_edicion" | "cantidad_ediciones" | "descuento" | "costo_envio"> & { cotizacion_usd?: number | null; cotizacion_tipo?: string | null; monto_total_usd?: number | null; editado?: boolean; fecha_ultima_edicion?: string | null; cantidad_ediciones?: number; descuento?: number; costo_envio?: number }
+        Insert: Omit<Database["public"]["Tables"]["pedidos"]["Row"], "id" | "created_at" | "updated_at" | "codigo_seguimiento" | "saldo_pendiente" | "cotizacion_usd" | "cotizacion_tipo" | "monto_total_usd" | "editado" | "fecha_ultima_edicion" | "cantidad_ediciones" | "descuento" | "costo_envio" | "canal" | "numero_interno"> & { cotizacion_usd?: number | null; cotizacion_tipo?: string | null; monto_total_usd?: number | null; editado?: boolean; fecha_ultima_edicion?: string | null; cantidad_ediciones?: number; descuento?: number; costo_envio?: number; canal?: string | null; numero_interno?: string | null }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
       }
       items_pedido: {
