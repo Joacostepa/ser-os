@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!["products", "customers", "pedidos"].includes(type)) {
+    if (!["products", "customers", "orders"].includes(type)) {
       return NextResponse.json(
-        { error: "type debe ser 'products', 'customers' o 'pedidos'" },
+        { error: "type debe ser 'products', 'customers' o 'orders'" },
         { status: 400 }
       )
     }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         await importProducts(tienda_id, job.id)
       } else if (type === "customers") {
         await importCustomers(tienda_id, job.id)
-      } else if (type === "pedidos") {
+      } else if (type === "orders") {
         await importOrders(tienda_id, job.id)
       }
     })
