@@ -71,7 +71,6 @@ export async function getPedido(id: string) {
     .select(`
       *,
       cliente:clientes(*),
-      tienda:tiendas(id, nombre, tienda_nube_store_id),
       items:items_pedido(
         *,
         producto:productos(nombre, sku),
@@ -97,7 +96,20 @@ export async function getPedido(id: string) {
     .single()
 
   if (error) throw new Error(error.message)
-  return data
+
+  // Fetch tienda separately (nullable FK join can cause issues)
+  let tienda = null
+  if (data.tienda_id) {
+    const { data: t } = await supabase
+      .from("tiendas")
+      .select("id, nombre, tienda_nube_store_id")
+      .eq("id", data.tienda_id)
+      .single()
+    tienda = t
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return { ...data, tienda } as any
 }
 
 export async function crearPedido(input: CrearPedidoInput) {
