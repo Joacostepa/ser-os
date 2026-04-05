@@ -14,7 +14,7 @@ function calcularRacha(pedidos: any[]): number {
   for (let i = 0; i < 24; i++) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hay = pedidos.some((p: any) => {
-      const f = new Date(p.fecha_ingreso || p.created_at)
+      const f = new Date(p.fecha)
       return f.getMonth() === mes && f.getFullYear() === anio
     })
     if (hay) racha++
@@ -44,43 +44,56 @@ export async function clasificarClientas() {
   const config = await getClubConfig()
   const hoy = new Date()
 
+  // 1. Get all clients
   const { data: clientes } = await supabase
     .from("clientes")
-    .select("id, nombre, email, pedidos:pedidos(id, monto_neto, monto_total, fecha_ingreso, created_at, estado_interno)")
+    .select("id")
+
+  // 2. Get ALL pedidos separately (avoid embedded relation limits)
+  const { data: pedidos } = await supabase
+    .from("pedidos")
+    .select("id, cliente_id, monto_neto, monto_total, fecha_ingreso, created_at, estado_interno")
+    .not("estado_interno", "eq", "cancelado")
+    .order("fecha_ingreso", { ascending: false, nullsFirst: false })
+    .limit(10000)
+
+  // 3. Group pedidos by cliente_id
+  const pedidosPorCliente = new Map<string, { fecha: string; monto: number }[]>()
+  for (const p of pedidos || []) {
+    if (!p.cliente_id) continue
+    const fecha = p.fecha_ingreso || p.created_at
+    const monto = Number(p.monto_neto || p.monto_total || 0)
+    if (!pedidosPorCliente.has(p.cliente_id)) {
+      pedidosPorCliente.set(p.cliente_id, [])
+    }
+    pedidosPorCliente.get(p.cliente_id)!.push({ fecha, monto })
+  }
 
   const contadores = { activas: 0, inactivas: 0, dormidas: 0, reactivacion: 0, nunca_compro: 0, vip: 0, estandar: 0 }
 
   for (const cliente of clientes || []) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pedidosValidos = ((cliente as any).pedidos || [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((p: any) => p.estado_interno !== "cancelado")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .sort((a: any, b: any) => new Date(b.fecha_ingreso || b.created_at).getTime() - new Date(a.fecha_ingreso || a.created_at).getTime())
+    const pedidosCliente = pedidosPorCliente.get(cliente.id) || []
+    // Already sorted DESC by fecha_ingreso from the query
 
-    const fechaUltima = pedidosValidos[0]?.fecha_ingreso || pedidosValidos[0]?.created_at
-    const ultimaCompra = fechaUltima ? new Date(fechaUltima) : null
+    const ultimaCompra = pedidosCliente[0]?.fecha ? new Date(pedidosCliente[0].fecha) : null
     const dias = ultimaCompra ? Math.floor((hoy.getTime() - ultimaCompra.getTime()) / 86400000) : null
 
     let estado: string
-    if (pedidosValidos.length === 0) estado = "nunca_compro"
+    if (pedidosCliente.length === 0) estado = "nunca_compro"
     else if (dias! <= Number(config.dias_inactiva || 30)) estado = "activa"
     else if (dias! <= Number(config.dias_dormida || 90)) estado = "inactiva"
     else if (dias! <= Number(config.dias_reactivacion || 150)) estado = "dormida"
     else estado = "reactivacion"
 
-    const ultimas3 = pedidosValidos.slice(0, 3)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const promedio = ultimas3.length > 0 ? ultimas3.reduce((s: number, p: any) => s + Number(p.monto_neto || p.monto_total || 0), 0) / ultimas3.length : 0
+    const ultimas3 = pedidosCliente.slice(0, 3)
+    const promedio = ultimas3.length > 0 ? ultimas3.reduce((s, p) => s + p.monto, 0) / ultimas3.length : 0
 
     let nivel = promedio >= Number(config.umbral_vip || 300000) ? "vip" : "estandar"
-    const racha = calcularRacha(pedidosValidos)
+    const racha = calcularRacha(pedidosCliente)
     if (racha >= Number(config.racha_subir_nivel || 12)) nivel = "vip"
 
     const descuento = getDescuento(estado, nivel, config)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const totalFacturado = pedidosValidos.reduce((s: number, p: any) => s + Number(p.monto_neto || p.monto_total || 0), 0)
+    const totalFacturado = pedidosCliente.reduce((s, p) => s + p.monto, 0)
 
     const { data: existing } = await supabase.from("club_ser_clientas").select("mejor_racha").eq("cliente_id", cliente.id).single()
 
@@ -90,7 +103,7 @@ export async function clasificarClientas() {
       promedio_compra: Math.round(promedio),
       ultima_compra_fecha: ultimaCompra?.toISOString().split("T")[0] || null,
       dias_desde_ultima_compra: dias,
-      total_compras: pedidosValidos.length,
+      total_compras: pedidosCliente.length,
       total_facturado: Math.round(totalFacturado),
       racha_meses: racha,
       mejor_racha: Math.max(racha, existing?.mejor_racha || 0),
