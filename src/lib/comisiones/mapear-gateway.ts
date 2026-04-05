@@ -11,6 +11,8 @@ export function mapearGatewayTN(gateway: string, paymentMethod?: string): string
   const mapa: Record<string, string> = {
     mercadopago: "mercadopago",
     "Mercado Pago": "mercadopago",
+    gocuotas: "gocuotas",
+    "Go Cuotas": "gocuotas",
     wire_transfer: "transferencia_directa",
     bank_deposit: "transferencia_directa",
     cash: "efectivo",
