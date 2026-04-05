@@ -16,6 +16,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SER Mayorista — Sistema de Gestión",
   description: "Backoffice operativo para SER Mayorista",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SER Mayorista",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: "/icons/icon-152.png",
+  },
 }
 
 export default function RootLayout({
