@@ -107,19 +107,25 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
   }
 
   // 6c. Calculate commission
-  const { calcularComision } = await import("@/lib/comisiones/calcular-comision")
-  const { mapearMetodoManual } = await import("@/lib/comisiones/mapear-gateway")
+  let comision = { total_comisiones: 0, monto_neto_recibido: input.monto, comision_pasarela_neta: 0, comision_tn: 0, iva_comision_pasarela: 0 }
+  try {
+    const { calcularComision } = await import("@/lib/comisiones/calcular-comision")
+    const { mapearMetodoManual } = await import("@/lib/comisiones/mapear-gateway")
 
-  const canalPedido = (pedido as { canal?: string }).canal || "manual"
-  const metodoComision = mapearMetodoManual(input.metodo_pago, canalPedido)
-  const comision = await calcularComision(supabase, input.monto, metodoComision, canalPedido)
+    const canalPedido = (pedido as { canal?: string }).canal || "manual"
+    const metodoComision = mapearMetodoManual(input.metodo_pago, canalPedido)
+    const comisionCalc = await calcularComision(supabase, input.monto, metodoComision, canalPedido)
+    comision = comisionCalc
 
-  if (comision.total_comisiones > 0) {
-    await supabase.from("comisiones_pedido").insert({
-      pedido_id: input.pedido_id,
-      pago_id: pago.id,
-      ...comision,
-    })
+    if (comisionCalc.total_comisiones > 0) {
+      await supabase.from("comisiones_pedido").insert({
+        pedido_id: input.pedido_id,
+        pago_id: pago.id,
+        ...comisionCalc,
+      })
+    }
+  } catch (err) {
+    console.error("Error al calcular comisión (no bloquea el pago):", err)
   }
 
   // 7. Accounting: venta + CMV (only on first payment, if no venta asiento exists)
