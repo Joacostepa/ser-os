@@ -12,8 +12,9 @@ function calcularRacha(pedidos: any[]): number {
   let anio = hoy.getFullYear()
 
   for (let i = 0; i < 24; i++) {
-    const hay = pedidos.some((p: { created_at: string }) => {
-      const f = new Date(p.created_at)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hay = pedidos.some((p: any) => {
+      const f = new Date(p.fecha_ingreso || p.created_at)
       return f.getMonth() === mes && f.getFullYear() === anio
     })
     if (hay) racha++
@@ -45,7 +46,7 @@ export async function clasificarClientas() {
 
   const { data: clientes } = await supabase
     .from("clientes")
-    .select("id, nombre, email, pedidos:pedidos(id, monto_neto, monto_total, created_at, estado_interno)")
+    .select("id, nombre, email, pedidos:pedidos(id, monto_neto, monto_total, fecha_ingreso, created_at, estado_interno)")
 
   const contadores = { activas: 0, inactivas: 0, dormidas: 0, reactivacion: 0, nunca_compro: 0, vip: 0, estandar: 0 }
 
@@ -55,9 +56,10 @@ export async function clasificarClientas() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((p: any) => p.estado_interno !== "cancelado")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a: any, b: any) => new Date(b.fecha_ingreso || b.created_at).getTime() - new Date(a.fecha_ingreso || a.created_at).getTime())
 
-    const ultimaCompra = pedidosValidos[0]?.created_at ? new Date(pedidosValidos[0].created_at) : null
+    const fechaUltima = pedidosValidos[0]?.fecha_ingreso || pedidosValidos[0]?.created_at
+    const ultimaCompra = fechaUltima ? new Date(fechaUltima) : null
     const dias = ultimaCompra ? Math.floor((hoy.getTime() - ultimaCompra.getTime()) / 86400000) : null
 
     let estado: string
