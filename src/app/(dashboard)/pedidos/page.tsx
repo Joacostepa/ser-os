@@ -45,7 +45,7 @@ export default function PedidosPage() {
             cliente:clientes(id, nombre, email, telefono),
             tienda:tiendas(id, nombre, canal)
           `)
-          .order("created_at", { ascending: false })
+          .order("fecha_ingreso", { ascending: false })
           .range(from, from + pageSize - 1)
 
         if (estado && estado !== "todos") {
