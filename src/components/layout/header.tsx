@@ -1,8 +1,11 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Menu } from "lucide-react"
 import { CotizacionDolar } from "@/components/shared/cotizacion-dolar"
 import { NotificacionesBell } from "@/components/layout/notificaciones-bell"
+import { CommandKTrigger } from "@/components/search/command-k-trigger"
+import { CommandK } from "@/components/search/command-k"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 
@@ -42,6 +45,18 @@ interface HeaderProps {
 export function Header({ onMobileMenuOpen }: HeaderProps) {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen((prev) => !prev)
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   return (
     <header className="flex h-12 items-center border-b border-stone-200 bg-white">
@@ -77,6 +92,8 @@ export function Header({ onMobileMenuOpen }: HeaderProps) {
           })}
         </nav>
 
+        <CommandKTrigger onClick={() => setSearchOpen(true)} />
+
         <CotizacionDolar />
 
         <NotificacionesBell />
@@ -96,8 +113,12 @@ export function Header({ onMobileMenuOpen }: HeaderProps) {
           SER Mayorista
         </span>
 
+        <CommandKTrigger onClick={() => setSearchOpen(true)} />
+
         <NotificacionesBell />
       </div>
+
+      <CommandK open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   )
 }
