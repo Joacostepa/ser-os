@@ -30,31 +30,45 @@ export default function PedidosPage() {
   useEffect(() => {
     async function fetchPedidos() {
       setLoading(true)
-      let query = supabase
-        .from("pedidos")
-        .select(`
-          *,
-          cliente:clientes(id, nombre, email, telefono),
-          tienda:tiendas(id, nombre, canal)
-        `)
-        .order("created_at", { ascending: false })
-        .limit(5000)
 
-      if (estado && estado !== "todos") {
-        query = query.eq("estado_interno", estado)
-      }
-      if (tipo && tipo !== "todos") {
-        query = query.eq("tipo", tipo)
-      }
-      if (prioridad && prioridad !== "todos") {
-        query = query.eq("prioridad", prioridad)
-      }
-      if (busqueda) {
-        query = query.or(`numero_tn.ilike.%${busqueda}%,numero_interno.ilike.%${busqueda}%`)
+      // Fetch all pedidos in chunks of 1000 (Supabase default limit)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allData: any[] = []
+      let from = 0
+      const pageSize = 1000
+
+      while (true) {
+        let query = supabase
+          .from("pedidos")
+          .select(`
+            *,
+            cliente:clientes(id, nombre, email, telefono),
+            tienda:tiendas(id, nombre, canal)
+          `)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1)
+
+        if (estado && estado !== "todos") {
+          query = query.eq("estado_interno", estado)
+        }
+        if (tipo && tipo !== "todos") {
+          query = query.eq("tipo", tipo)
+        }
+        if (prioridad && prioridad !== "todos") {
+          query = query.eq("prioridad", prioridad)
+        }
+        if (busqueda) {
+          query = query.or(`numero_tn.ilike.%${busqueda}%,numero_interno.ilike.%${busqueda}%`)
+        }
+
+        const { data } = await query
+        if (!data || data.length === 0) break
+        allData.push(...data)
+        if (data.length < pageSize) break
+        from += pageSize
       }
 
-      const { data } = await query
-      setPedidos(data || [])
+      setPedidos(allData)
       setLoading(false)
     }
 
