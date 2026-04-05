@@ -11,7 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ArrowLeft, Mail, Phone, MapPin, Clock, Star } from "lucide-react"
-import { CALIFICACION_PROVEEDOR_CONFIG, RUBRO_PROVEEDOR_CONFIG, ESTADO_COMPRA_CONFIG } from "@/lib/constants"
+import { CALIFICACION_PROVEEDOR_CONFIG, RUBRO_PROVEEDOR_CONFIG, ESTADO_COMPRA_CONFIG, CONDICION_FISCAL_CONFIG } from "@/lib/constants"
+import { CondicionFiscalBadge } from "@/components/shared/condicion-fiscal-badge"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import Link from "next/link"
@@ -51,6 +52,7 @@ export default async function ProveedorDetailPage({
             <Badge variant="secondary" className={califConfig?.color}>
               {califConfig?.label}
             </Badge>
+            <CondicionFiscalBadge condicion={proveedor.condicion_fiscal} />
             {!proveedor.activo && (
               <Badge variant="secondary" className="bg-gray-100 text-gray-500">Inactivo</Badge>
             )}
@@ -89,6 +91,12 @@ export default async function ProveedorDetailPage({
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 Entrega: {proveedor.tiempo_entrega_dias} días
+              </div>
+            )}
+            {proveedor.cuit && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-xs font-medium text-muted-foreground w-4">CUIT</span>
+                <span className="font-mono text-xs">{proveedor.cuit}</span>
               </div>
             )}
             {proveedor.condiciones_pago && (

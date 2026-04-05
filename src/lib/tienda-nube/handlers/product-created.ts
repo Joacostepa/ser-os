@@ -78,7 +78,10 @@ export async function handleProductCreated(ctx: WebhookContext) {
     }
 
     if (!varianteId) {
-      const variantName = variant.values?.join(" - ") || nombre
+      const variantName = variant.values
+        ?.map((v: unknown) => typeof v === "string" ? v : (v && typeof v === "object" ? ((v as Record<string, string>).es || Object.values(v)[0]) : String(v)))
+        .filter(Boolean)
+        .join(" - ") || nombre
 
       const { data: newVar, error } = await supabase
         .from("variantes")

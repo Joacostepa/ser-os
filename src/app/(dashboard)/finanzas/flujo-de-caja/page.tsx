@@ -12,7 +12,7 @@ import {
 } from "recharts"
 
 export default function FlujoDeCajaPage() {
-  const [period, setPeriod] = useState<Period>("last_quarter")
+  const [period, setPeriod] = useState<Period>("ultimos_90")
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)

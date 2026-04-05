@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { crearOrdenCompra } from "@/lib/actions/compras"
+import { descomponerIVA } from "@/lib/iva"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -49,6 +51,8 @@ export default function NuevaCompraPage() {
   const [notas, setNotas] = useState("")
   const [notasInternas, setNotasInternas] = useState("")
   const [descuento, setDescuento] = useState(0)
+  const [incluyeIva, setIncluyeIva] = useState(true)
+  const [tasaIva, setTasaIva] = useState(0.21)
   const [items, setItems] = useState<ItemForm[]>([
     { descripcion: "", cantidad: 1, precio_unitario: 0 },
   ])
@@ -58,7 +62,7 @@ export default function NuevaCompraPage() {
       const [{ data: provs }, { data: peds }] = await Promise.all([
         supabase
           .from("proveedores")
-          .select("id, nombre")
+          .select("id, nombre, condicion_fiscal")
           .eq("activo", true)
           .order("nombre"),
         supabase
@@ -99,6 +103,7 @@ export default function NuevaCompraPage() {
     0
   )
   const total = subtotal - descuento
+  const ivaDescompuesto = incluyeIva ? descomponerIVA(total, tasaIva) : null
 
   async function handleSubmit(estado: "borrador" | "enviada") {
     if (!proveedorId) {
@@ -125,6 +130,8 @@ export default function NuevaCompraPage() {
         notas: notas || undefined,
         notas_internas: notasInternas || undefined,
         estado,
+        incluye_iva: incluyeIva,
+        tasa_iva: tasaIva,
       })
       toast.success(
         estado === "borrador"
@@ -175,7 +182,18 @@ export default function NuevaCompraPage() {
             <Label className="text-stone-600">Proveedor *</Label>
             <Select
               value={proveedorId}
-              onValueChange={(v: string | null) => v && setProveedorId(v)}
+              onValueChange={(v: string | null) => {
+                if (!v) return
+                setProveedorId(v)
+                const prov = proveedores.find((p) => p.id === v)
+                if (prov?.condicion_fiscal === "monotributista" || prov?.condicion_fiscal === "exento") {
+                  setIncluyeIva(false)
+                  setTasaIva(0)
+                } else {
+                  setIncluyeIva(true)
+                  setTasaIva(0.21)
+                }
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar proveedor..." />
@@ -189,6 +207,22 @@ export default function NuevaCompraPage() {
                 ))}
               </SelectContent>
             </Select>
+            {proveedorId && (() => {
+              const prov = proveedores.find((p) => p.id === proveedorId)
+              const cf = prov?.condicion_fiscal
+              if (cf === "monotributista") {
+                return <p className="text-xs italic text-stone-400">Proveedor Monotributista — sin IVA</p>
+              }
+              if (cf === "exento") {
+                return <p className="text-xs italic text-stone-400">Proveedor Exento — sin IVA</p>
+              }
+              return (
+                <label className="flex items-center gap-2 text-xs text-stone-600 cursor-pointer">
+                  <Checkbox checked={incluyeIva} onCheckedChange={(v) => setIncluyeIva(!!v)} />
+                  Los precios incluyen IVA 21%
+                </label>
+              )
+            })()}
           </div>
           <div className="space-y-2">
             <Label className="text-stone-600">Pedido vinculado (opcional)</Label>
@@ -343,6 +377,22 @@ export default function NuevaCompraPage() {
             className="w-32 font-mono text-right"
           />
         </div>
+        {ivaDescompuesto && (
+          <>
+            <div className="flex items-center justify-between text-sm border-t border-stone-200 pt-3">
+              <span className="text-stone-500">Neto</span>
+              <span className="font-mono text-stone-800">
+                {formatearMontoCompleto(ivaDescompuesto.neto)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-stone-500">IVA 21%</span>
+              <span className="font-mono text-stone-800">
+                {formatearMontoCompleto(ivaDescompuesto.iva)}
+              </span>
+            </div>
+          </>
+        )}
         <div className="flex items-center justify-between text-sm border-t border-stone-200 pt-3">
           <span className="font-medium text-stone-800">Total</span>
           <span className="font-mono font-medium text-stone-900 text-lg">

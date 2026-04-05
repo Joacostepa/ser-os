@@ -13,7 +13,7 @@ export const pedidosColumns: ColumnDef<any>[] = [
     header: "# Pedido",
     cell: ({ row }) => (
       <span className="text-stone-400 text-sm font-mono">
-        {row.original.numero_tn || `#${row.original.id.slice(0, 8)}`}
+        {row.original.numero_tn || row.original.numero_interno || `#${row.original.id.slice(0, 8)}`}
       </span>
     ),
   },
@@ -30,7 +30,7 @@ export const pedidosColumns: ColumnDef<any>[] = [
     accessorKey: "canal",
     header: "Canal",
     cell: ({ row }) => (
-      <CanalBadge canal={row.original.tienda?.canal || null} />
+      <CanalBadge canal={row.original.canal} tiendaCanal={row.original.tienda?.canal} />
     ),
   },
   {

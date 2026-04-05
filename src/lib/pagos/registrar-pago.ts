@@ -64,7 +64,15 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
     }
   }
 
-  // 6. INSERT into pagos
+  // 6. Snapshot TC dólar blue
+  let tcDolar: number | null = null
+  try {
+    const { getCotizacionVenta } = await import("@/lib/dolar-api")
+    tcDolar = await getCotizacionVenta("blue")
+  } catch { /* ignore */ }
+  const montoUsd = tcDolar ? Math.round((input.monto / tcDolar) * 100) / 100 : null
+
+  // 6b. INSERT into pagos
   const concepto = input.tipo_pago === "anticipo" || (esPrimerPago && input.tipo_pago !== "total")
     ? "sena"
     : input.tipo_pago === "total"
@@ -82,6 +90,8 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
       concepto,
       comprobante_url: input.comprobante_url || null,
       fecha: input.fecha,
+      tc_dolar: tcDolar,
+      monto_usd: montoUsd,
       notas: [
         conceptoPorTipo(input.tipo_pago, numeroPedido),
         input.observaciones,
@@ -157,6 +167,7 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
       }
     } catch (err) {
       console.error("Error al crear asiento de venta/CMV:", err)
+      throw new Error(`Error contable (venta): ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -176,6 +187,7 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
     })
   } catch (err) {
     console.error("Error al crear asiento de cobro:", err)
+    throw new Error(`Error contable (cobro): ${err instanceof Error ? err.message : String(err)}`)
   }
 
   // 9. Update pago record with asiento IDs (store in notas since pagos table may not have asiento_id)

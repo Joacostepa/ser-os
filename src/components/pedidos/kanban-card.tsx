@@ -2,10 +2,10 @@
 
 import { useDraggable } from "@dnd-kit/core"
 import { Card } from "@/components/ui/card"
-import { PrioridadBadge } from "@/components/shared/status-badge"
+import { PrioridadBadge, TipoBadge } from "@/components/shared/status-badge"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Calendar, Package, Star } from "lucide-react"
+import { Calendar } from "lucide-react"
 import Link from "next/link"
 
 interface KanbanCardProps {
@@ -19,6 +19,8 @@ export function KanbanCard({ pedido, isDragging }: KanbanCardProps) {
     id: pedido.id,
   })
 
+  const sinClasificar = !pedido.tipo || pedido.tipo === "sin_clasificar"
+
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
     : undefined
@@ -29,12 +31,15 @@ export function KanbanCard({ pedido, isDragging }: KanbanCardProps) {
         <Card
           className={`p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
             isDragging ? "opacity-50 shadow-lg" : ""
-          }`}
+          } ${sinClasificar ? "border-dashed border-amber-300" : ""}`}
         >
           <div className="flex items-start justify-between gap-2 mb-2">
-            <span className="text-sm font-medium">
-              {pedido.numero_tn || `#${pedido.id.slice(0, 8)}`}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium">
+                {pedido.numero_tn || `#${pedido.id.slice(0, 8)}`}
+              </span>
+              <TipoBadge tipo={pedido.tipo || "sin_clasificar"} />
+            </div>
             <PrioridadBadge prioridad={pedido.prioridad} />
           </div>
 
@@ -46,12 +51,6 @@ export function KanbanCard({ pedido, isDragging }: KanbanCardProps) {
             {pedido.tienda?.canal && (
               <span className={`font-medium ${pedido.tienda.canal === "mayorista" ? "text-blue-600" : "text-emerald-600"}`}>
                 {pedido.tienda.canal === "mayorista" ? "MAY" : "MIN"}
-              </span>
-            )}
-            {pedido.tipo === "personalizado" && (
-              <span className="flex items-center gap-1">
-                <Star className="h-3 w-3" />
-                Custom
               </span>
             )}
             {pedido.fecha_comprometida && (

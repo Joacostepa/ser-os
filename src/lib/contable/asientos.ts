@@ -45,7 +45,7 @@ export async function crearAsiento(params: {
     p_referencia_tipo: params.referencia_tipo || null,
     p_referencia_id: params.referencia_id || null,
     p_usuario_id: null,
-    p_lineas: JSON.stringify(lineasJson),
+    p_lineas: lineasJson,
   })
 
   if (error) throw new Error(`Error al crear asiento: ${error.message}`)

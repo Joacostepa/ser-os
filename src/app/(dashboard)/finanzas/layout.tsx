@@ -7,7 +7,6 @@ const NAV_ITEMS = [
   { href: "/finanzas", label: "Resumen" },
   { href: "/finanzas/cuentas-a-cobrar", label: "Cuentas a cobrar" },
   { href: "/finanzas/cuentas-a-pagar", label: "Cuentas a pagar" },
-  { href: "/finanzas/gastos", label: "Gastos" },
   { href: "/finanzas/estado-de-resultados", label: "Estado de resultados" },
   { href: "/finanzas/flujo-de-caja", label: "Flujo de caja" },
   { href: "/finanzas/libro-diario", label: "Libro diario" },

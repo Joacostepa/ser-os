@@ -84,7 +84,10 @@ export async function importProducts(tiendaId: string, jobId: string) {
 
           // Variants
           for (const variant of product.variants || []) {
-            const varName = variant.values?.join(" - ") || nombre
+            const varName = variant.values
+              ?.map((v: unknown) => typeof v === "string" ? v : (v && typeof v === "object" ? ((v as Record<string, string>).es || Object.values(v)[0]) : String(v)))
+              .filter(Boolean)
+              .join(" - ") || nombre
 
             let varianteId: string
 
@@ -97,6 +100,7 @@ export async function importProducts(tiendaId: string, jobId: string) {
               await supabase
                 .from("variantes")
                 .update({
+                  nombre: varName,
                   stock_actual: variant.stock ?? 0,
                   precio: variant.price ? parseFloat(variant.price) : null,
                   costo: variant.cost ? parseFloat(variant.cost) : null,

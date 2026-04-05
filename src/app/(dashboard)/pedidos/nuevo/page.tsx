@@ -398,6 +398,17 @@ export default function NuevoPedidoPage() {
         otro: "Otro",
       }
 
+      // 4b. Fetch cotización USD
+      let cotizacionUsd: number | null = null
+      try {
+        const res = await fetch("https://dolarapi.com/v1/dolares/blue")
+        if (res.ok) {
+          const data = await res.json()
+          cotizacionUsd = data?.venta || null
+        }
+      } catch { /* ignore */ }
+      const montoTotalUsd = cotizacionUsd ? Math.round((total / cotizacionUsd) * 100) / 100 : null
+
       // 5. INSERT pedido
       const { data: pedido, error: pedidoError } = await supabase
         .from("pedidos")
@@ -421,6 +432,9 @@ export default function NuevoPedidoPage() {
           observaciones: observaciones || null,
           fecha_ingreso: new Date().toISOString(),
           codigo_seguimiento_portal: codigoSeguimientoPortal,
+          cotizacion_usd: cotizacionUsd,
+          cotizacion_tipo: "blue",
+          monto_total_usd: montoTotalUsd,
         })
         .select()
         .single()

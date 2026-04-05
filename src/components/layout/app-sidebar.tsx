@@ -17,6 +17,7 @@ import {
   Boxes,
   Zap,
   Wallet,
+  Receipt,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { label: "Pagos", href: "/pagos", icon: CreditCard },
   { label: "Proveedores", href: "/proveedores", icon: Truck },
   { label: "Compras", href: "/compras", icon: ShoppingBag },
+  { label: "Gastos", href: "/gastos", icon: Receipt },
   { label: "Insumos", href: "/insumos", icon: Boxes },
   { label: "Finanzas", href: "/finanzas", icon: Wallet },
 ]

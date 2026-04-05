@@ -129,6 +129,48 @@ export const TIPO_MOVIMIENTO_CONFIG = {
   devolucion: { label: "Devolución", color: "bg-blue-100 text-blue-800", sign: "+" },
 } as const
 
+export const CONDICION_FISCAL_CONFIG = {
+  responsable_inscripto: { label: "Responsable Inscripto", short: "RI", color: "bg-blue-50 text-blue-700" },
+  monotributista: { label: "Monotributista", short: "Mono", color: "bg-amber-50 text-amber-700" },
+  exento: { label: "Exento", short: "Exento", color: "bg-stone-100 text-stone-500" },
+} as const
+
+export const CONDICION_FISCAL_OPTIONS = [
+  { value: "responsable_inscripto", label: "Responsable Inscripto" },
+  { value: "monotributista", label: "Monotributista" },
+  { value: "exento", label: "Exento" },
+] as const
+
+export const CATEGORIA_IVA_DEFAULT: Record<string, boolean> = {
+  "6.1.1": false,  // Sueldos y Jornales
+  "6.1.2": false,  // Cargas Sociales
+  "6.1.3": false,  // Honorarios Profesionales
+  "6.2.1": true,   // Alquiler
+  "6.2.2": true,   // Servicios
+  "6.2.3": true,   // Packaging y Embalaje
+  "6.2.4": true,   // Envíos y Fletes
+  "6.2.5": true,   // Comisiones
+  "6.2.6": true,   // Insumos de Oficina
+  "6.2.7": true,   // Mantenimiento y Reparaciones
+  "6.2.8": true,   // Seguros
+  "6.2.9": false,  // Impuestos y Tasas
+  "6.2.10": true,  // Publicidad y Marketing
+  "6.2.11": true,  // Software y Suscripciones
+  "6.2.12": false, // Gastos Bancarios
+  "6.2.13": false, // Otros Gastos Operativos
+  "6.3.1": false,  // Intereses Pagados
+  "6.3.2": false,  // Diferencia de Cambio
+  "6.3.3": false,  // Otros Gastos Financieros
+}
+
+export const FRECUENCIA_OPTIONS = [
+  { value: "mensual", label: "Mensual" },
+  { value: "bimestral", label: "Bimestral" },
+  { value: "trimestral", label: "Trimestral" },
+  { value: "semestral", label: "Semestral" },
+  { value: "anual", label: "Anual" },
+] as const
+
 export const ESTADO_PAGO_COMPRA_CONFIG = {
   pendiente: { label: "Pendiente", color: "text-red-500" },
   parcial: { label: "Parcial", color: "text-amber-600" },

@@ -1,6 +1,7 @@
 "use server"
 
 import { crearAsiento } from "./asientos"
+import { calcularNeto } from "@/lib/iva"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function onVentaConfirmada(pedido: any) {
@@ -66,18 +67,41 @@ export async function onCompraRecibida(compra: any) {
     s + (Number(i.precio_unitario) * Number(i.cantidad)), 0) ?? 0
   if (monto <= 0) return
 
-  // Compra: Inventario (debe) / CxP (haber)
-  await crearAsiento({
-    fecha: new Date(),
-    descripcion: `Compra — ${compra.proveedor?.nombre || ""} — OC #${compra.id.slice(0, 8)}`,
-    tipo: "compra",
-    referencia_tipo: "compra",
-    referencia_id: compra.id,
-    lineas: [
-      { cuenta_codigo: "1.1.3", debe: monto, haber: 0 },
-      { cuenta_codigo: "2.1.1", debe: 0, haber: monto },
-    ],
-  })
+  const descripcion = `Compra — ${compra.proveedor?.nombre || ""} — OC #${compra.id.slice(0, 8)}`
+
+  if (compra.incluye_iva) {
+    // RI supplier: split into Neto + IVA CF
+    const neto = compra.subtotal_neto != null
+      ? Number(compra.subtotal_neto)
+      : calcularNeto(monto)
+    const iva = monto - neto
+
+    await crearAsiento({
+      fecha: new Date(),
+      descripcion,
+      tipo: "compra",
+      referencia_tipo: "compra",
+      referencia_id: compra.id,
+      lineas: [
+        { cuenta_codigo: "1.1.3", debe: neto, haber: 0 },
+        { cuenta_codigo: "1.1.5", debe: iva, haber: 0 },
+        { cuenta_codigo: "2.1.1", debe: 0, haber: monto },
+      ],
+    })
+  } else {
+    // Monotributista/Exento: no IVA split
+    await crearAsiento({
+      fecha: new Date(),
+      descripcion,
+      tipo: "compra",
+      referencia_tipo: "compra",
+      referencia_id: compra.id,
+      lineas: [
+        { cuenta_codigo: "1.1.3", debe: monto, haber: 0 },
+        { cuenta_codigo: "2.1.1", debe: 0, haber: monto },
+      ],
+    })
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,17 +131,37 @@ export async function onGastoRegistrado(gasto: any) {
   const cuentaCodigo = gasto.cuenta_codigo || "6.2.13" // default: otros gastos
   const contrapartida = gasto.pagado ? "1.1.1" : "2.1.3"
 
-  await crearAsiento({
-    fecha: gasto.fecha || new Date(),
-    descripcion: `Gasto — ${gasto.descripcion}`,
-    tipo: "gasto",
-    referencia_tipo: "gasto",
-    referencia_id: gasto.id,
-    lineas: [
-      { cuenta_codigo: cuentaCodigo, debe: monto, haber: 0 },
-      { cuenta_codigo: contrapartida, debe: 0, haber: monto },
-    ],
-  })
+  if (gasto.incluye_iva && Number(gasto.monto_iva || 0) > 0) {
+    // IVA split: expense account gets neto, IVA CF (1.1.5) gets iva amount
+    const neto = Number(gasto.monto_neto) || calcularNeto(monto)
+    const iva = Number(gasto.monto_iva) || (monto - neto)
+
+    await crearAsiento({
+      fecha: gasto.fecha || new Date(),
+      descripcion: `Gasto — ${gasto.descripcion}`,
+      tipo: "gasto",
+      referencia_tipo: "gasto",
+      referencia_id: gasto.id,
+      lineas: [
+        { cuenta_codigo: cuentaCodigo, debe: neto, haber: 0 },
+        { cuenta_codigo: "1.1.5", debe: iva, haber: 0 },
+        { cuenta_codigo: contrapartida, debe: 0, haber: monto },
+      ],
+    })
+  } else {
+    // No IVA: full amount goes to expense account
+    await crearAsiento({
+      fecha: gasto.fecha || new Date(),
+      descripcion: `Gasto — ${gasto.descripcion}`,
+      tipo: "gasto",
+      referencia_tipo: "gasto",
+      referencia_id: gasto.id,
+      lineas: [
+        { cuenta_codigo: cuentaCodigo, debe: monto, haber: 0 },
+        { cuenta_codigo: contrapartida, debe: 0, haber: monto },
+      ],
+    })
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

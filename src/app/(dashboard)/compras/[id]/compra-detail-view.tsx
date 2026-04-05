@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { KPIRow } from "@/components/reportes/kpi-row"
+import { CondicionFiscalBadge } from "@/components/shared/condicion-fiscal-badge"
 import {
   ESTADO_COMPRA_CONFIG,
   ESTADO_PAGO_COMPRA_CONFIG,
@@ -449,9 +450,10 @@ export function CompraDetailView({ compra }: { compra: any }) {
                 </span>
               )}
             </div>
-            <p className="text-sm text-stone-400">
-              {compra.proveedor?.nombre}
-              {" --- "}
+            <p className="text-sm text-stone-400 flex items-center gap-2">
+              <span>{compra.proveedor?.nombre}</span>
+              <CondicionFiscalBadge condicion={compra.proveedor?.condicion_fiscal} />
+              <span>---</span>
               {format(
                 new Date(compra.created_at),
                 "dd/MM/yyyy HH:mm",
@@ -667,6 +669,26 @@ export function CompraDetailView({ compra }: { compra: any }) {
                     </span>
                   }
                 />
+              )}
+              {compra.incluye_iva && (
+                <>
+                  <KPIRow
+                    label="Neto"
+                    value={
+                      <span className="font-mono">
+                        {formatearMontoCompleto(Number(compra.subtotal_neto || 0))}
+                      </span>
+                    }
+                  />
+                  <KPIRow
+                    label="IVA 21%"
+                    value={
+                      <span className="font-mono">
+                        {formatearMontoCompleto(Number(compra.monto_iva || 0))}
+                      </span>
+                    }
+                  />
+                </>
               )}
               <KPIRow
                 label="Total"

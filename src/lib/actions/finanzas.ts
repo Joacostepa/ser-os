@@ -189,20 +189,66 @@ export async function getCuentasAPagar() {
 // GASTOS CRUD
 // ============================================================
 
-export async function getGastos(filtros?: { categoria?: string; pagado?: string }) {
+export async function getGastos(filtros?: { categoria?: string; pagado?: string; desde?: string; hasta?: string }) {
   const supabase = await createClient()
 
   let query = supabase
     .from("gastos")
-    .select("*, cuenta:cuentas(id, codigo, nombre)")
+    .select("*, cuenta:cuentas(id, codigo, nombre), proveedor:proveedores(id, nombre, condicion_fiscal)")
     .order("fecha", { ascending: false })
 
   if (filtros?.pagado === "pagado") query = query.eq("pagado", true)
   if (filtros?.pagado === "pendiente") query = query.eq("pagado", false)
+  if (filtros?.desde) query = query.gte("fecha", filtros.desde)
+  if (filtros?.hasta) query = query.lte("fecha", filtros.hasta)
 
   const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
+}
+
+export async function getGastosMetrics(desde: string, hasta: string) {
+  const supabase = await createClient()
+
+  // Gastos del periodo: sum of monto for filtered period
+  const { data: gastosPeriodo } = await supabase
+    .from("gastos")
+    .select("monto")
+    .gte("fecha", desde)
+    .lte("fecha", hasta)
+
+  const gastosDelPeriodo = gastosPeriodo?.reduce((s, g) => s + Number(g.monto), 0) ?? 0
+
+  // IVA recuperable: sum of monto_iva where incluye_iva=true in the period
+  const { data: gastosIva } = await supabase
+    .from("gastos")
+    .select("monto_iva")
+    .eq("incluye_iva", true)
+    .gte("fecha", desde)
+    .lte("fecha", hasta)
+
+  const ivaRecuperable = gastosIva?.reduce((s, g) => s + Number(g.monto_iva || 0), 0) ?? 0
+
+  // Gastos pendientes: sum of monto where pagado=false (all time)
+  const { data: pendientes } = await supabase
+    .from("gastos")
+    .select("monto")
+    .eq("pagado", false)
+
+  const gastosPendientes = pendientes?.reduce((s, g) => s + Number(g.monto), 0) ?? 0
+
+  // Recurrentes activos: count where recurrente=true
+  const { count: recurrentesActivos } = await supabase
+    .from("gastos")
+    .select("id", { count: "exact", head: true })
+    .eq("recurrente", true)
+
+  return {
+    gastosDelPeriodo,
+    ivaRecuperable,
+    gastosPendientes,
+    recurrentesActivos: recurrentesActivos ?? 0,
+  }
 }
 
 export async function crearGasto(data: {
@@ -216,8 +262,22 @@ export async function crearGasto(data: {
   recurrente?: boolean
   frecuencia?: string
   observaciones?: string
+  incluye_iva?: boolean
+  tasa_iva?: number
+  proveedor_id?: string
 }) {
   const supabase = await createClient()
+
+  const montoNeto = data.incluye_iva ? calcularNeto(data.monto, data.tasa_iva) : data.monto
+  const montoIva = data.incluye_iva ? (data.monto - montoNeto) : 0
+
+  // Snapshot cotización USD (sobre monto neto)
+  let cotizacionUsd: number | null = null
+  try {
+    const { getCotizacionVenta } = await import("@/lib/dolar-api")
+    cotizacionUsd = await getCotizacionVenta("blue")
+  } catch { /* ignore */ }
+  const montoUsd = cotizacionUsd ? Math.round((montoNeto / cotizacionUsd) * 100) / 100 : null
 
   const { data: gasto, error } = await supabase
     .from("gastos")
@@ -232,6 +292,14 @@ export async function crearGasto(data: {
       recurrente: data.recurrente || false,
       frecuencia: data.frecuencia || null,
       observaciones: data.observaciones || null,
+      incluye_iva: data.incluye_iva || false,
+      tasa_iva: data.incluye_iva ? (data.tasa_iva ?? 0.21) : 0.21,
+      monto_neto: montoNeto,
+      monto_iva: montoIva,
+      proveedor_id: data.proveedor_id || null,
+      cotizacion_usd: cotizacionUsd,
+      cotizacion_tipo: "blue",
+      monto_usd: montoUsd,
     })
     .select("id")
     .single()
@@ -247,11 +315,15 @@ export async function crearGasto(data: {
       fecha: data.fecha,
       pagado: data.pagado,
       cuenta_codigo: data.cuenta_codigo,
+      incluye_iva: data.incluye_iva || false,
+      monto_neto: montoNeto,
+      monto_iva: montoIva,
     })
   } catch (err) {
     console.error("Error generando asiento para gasto:", err)
   }
 
+  revalidatePath("/gastos")
   revalidatePath("/finanzas/gastos")
   revalidatePath("/finanzas")
   return gasto
@@ -288,6 +360,7 @@ export async function marcarGastoPagado(gastoId: string, metodoPago: string) {
     console.error("Error generando asiento de pago de gasto:", err)
   }
 
+  revalidatePath("/gastos")
   revalidatePath("/finanzas/gastos")
   revalidatePath("/finanzas")
 }

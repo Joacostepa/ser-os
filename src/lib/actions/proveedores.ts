@@ -59,6 +59,8 @@ export async function crearProveedor(data: {
   condiciones_pago?: string
   tiempo_entrega_dias?: number
   calificacion?: CalificacionProveedor
+  condicion_fiscal?: string
+  cuit?: string
   notas?: string
 }) {
   const supabase = await createClient()
@@ -75,6 +77,8 @@ export async function crearProveedor(data: {
       condiciones_pago: data.condiciones_pago || null,
       tiempo_entrega_dias: data.tiempo_entrega_dias || null,
       calificacion: data.calificacion || "bueno",
+      condicion_fiscal: data.condicion_fiscal || "responsable_inscripto",
+      cuit: data.cuit || null,
       notas: data.notas || null,
     })
     .select()
@@ -97,6 +101,8 @@ export async function actualizarProveedor(
     condiciones_pago?: string
     tiempo_entrega_dias?: number | null
     calificacion?: CalificacionProveedor
+    condicion_fiscal?: string
+    cuit?: string | null
     notas?: string
     activo?: boolean
   }

@@ -26,7 +26,8 @@ import { DataTable } from "@/components/shared/data-table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Search } from "lucide-react"
 import { crearProveedor } from "@/lib/actions/proveedores"
-import { CALIFICACION_PROVEEDOR_CONFIG, RUBRO_PROVEEDOR_CONFIG } from "@/lib/constants"
+import { CALIFICACION_PROVEEDOR_CONFIG, RUBRO_PROVEEDOR_CONFIG, CONDICION_FISCAL_CONFIG, CONDICION_FISCAL_OPTIONS } from "@/lib/constants"
+import { CondicionFiscalBadge } from "@/components/shared/condicion-fiscal-badge"
 import { toast } from "sonner"
 import { type ColumnDef } from "@tanstack/react-table"
 import type { RubroProveedor, CalificacionProveedor } from "@/types/database"
@@ -52,6 +53,11 @@ const proveedoresColumns: ColumnDef<any>[] = [
       const config = RUBRO_PROVEEDOR_CONFIG[row.original.rubro as RubroProveedor]
       return <Badge variant="secondary" className={config?.color}>{config?.label}</Badge>
     },
+  },
+  {
+    accessorKey: "condicion_fiscal",
+    header: "Cond. Fiscal",
+    cell: ({ row }) => <CondicionFiscalBadge condicion={row.original.condicion_fiscal} />,
   },
   {
     accessorKey: "calificacion",
@@ -98,6 +104,8 @@ export default function ProveedoresPage() {
   const [telefono, setTelefono] = useState("")
   const [rubro, setRubro] = useState<RubroProveedor>("otro")
   const [calificacion, setCalificacion] = useState<CalificacionProveedor>("bueno")
+  const [condicionFiscal, setCondicionFiscal] = useState("responsable_inscripto")
+  const [cuit, setCuit] = useState("")
   const [notas, setNotas] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
@@ -137,6 +145,8 @@ export default function ProveedoresPage() {
         telefono: telefono || undefined,
         rubro,
         calificacion,
+        condicion_fiscal: condicionFiscal,
+        cuit: cuit || undefined,
         notas: notas || undefined,
       })
       toast.success("Proveedor creado")
@@ -147,6 +157,8 @@ export default function ProveedoresPage() {
       setTelefono("")
       setRubro("otro")
       setCalificacion("bueno")
+      setCondicionFiscal("responsable_inscripto")
+      setCuit("")
       setNotas("")
       window.location.reload()
     } catch {
@@ -192,6 +204,23 @@ export default function ProveedoresPage() {
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Condición fiscal</Label>
+                  <Select value={condicionFiscal} onValueChange={(v: string | null) => v && setCondicionFiscal(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CONDICION_FISCAL_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>CUIT</Label>
+                  <Input placeholder="XX-XXXXXXXX-X" value={cuit} onChange={(e) => setCuit(e.target.value)} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

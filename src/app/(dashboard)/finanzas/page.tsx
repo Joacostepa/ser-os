@@ -11,7 +11,7 @@ import { getDashboardFinanciero } from "@/lib/actions/finanzas"
 import Link from "next/link"
 
 export default function FinanzasDashboardPage() {
-  const [period, setPeriod] = useState<Period>("last_30_days")
+  const [period, setPeriod] = useState<Period>("ultimos_30")
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)

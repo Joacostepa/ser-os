@@ -9,11 +9,11 @@ export const ROL_CONFIG: Record<string, { label: string; bg: string; text: strin
 }
 
 export const MENU_POR_ROL: Record<string, string[]> = {
-  admin: ['Dashboard', 'Operaciones', 'Pedidos', 'Tareas', 'Productos', 'Clientes', 'Pagos', 'Proveedores', 'Compras', 'Insumos', 'Finanzas', 'Configuracion'],
+  admin: ['Dashboard', 'Operaciones', 'Pedidos', 'Tareas', 'Productos', 'Clientes', 'Pagos', 'Proveedores', 'Compras', 'Gastos', 'Insumos', 'Finanzas', 'Configuracion'],
   operaciones: ['Dashboard', 'Operaciones', 'Pedidos', 'Tareas', 'Productos', 'Clientes', 'Proveedores', 'Compras', 'Insumos'],
   diseno: ['Tareas', 'Productos'],
   armado: ['Tareas'],
-  contable: ['Dashboard', 'Pedidos', 'Pagos', 'Compras', 'Finanzas', 'Proveedores', 'Insumos', 'Productos'],
+  contable: ['Dashboard', 'Pedidos', 'Pagos', 'Compras', 'Gastos', 'Finanzas', 'Proveedores', 'Insumos', 'Productos'],
   logistica: ['Pedidos', 'Tareas', 'Clientes'],
   lectura: ['Dashboard', 'Operaciones', 'Pedidos', 'Productos', 'Clientes', 'Proveedores', 'Compras', 'Insumos'],
 }

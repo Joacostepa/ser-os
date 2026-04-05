@@ -9,7 +9,7 @@ import { getEstadoResultados } from "@/lib/actions/finanzas"
 import { formatearMontoCompleto } from "@/lib/formatters"
 
 export default function EstadoDeResultadosPage() {
-  const [period, setPeriod] = useState<Period>("last_30_days")
+  const [period, setPeriod] = useState<Period>("ultimos_30")
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)

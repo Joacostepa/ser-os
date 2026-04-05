@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import type { EstadoCompra } from "@/types/database"
 import { getCotizacionVenta } from "@/lib/dolar-api"
+import { calcularNeto } from "@/lib/iva"
 import { onCompraRecibida, onPagoProveedorRegistrado } from "@/lib/contable/hooks-contables"
 
 // ---------------------------------------------------------------------------
@@ -100,7 +101,7 @@ export async function getCompraDetalle(id: string): Promise<any> {
     .from("compras")
     .select(`
       *,
-      proveedor:proveedores(id, nombre, telefono, email, rubro),
+      proveedor:proveedores(id, nombre, telefono, email, rubro, condicion_fiscal),
       pedido:pedidos(id, numero_tn, estado_interno, cliente:clientes(nombre)),
       items:items_compra(
         *,
@@ -169,6 +170,8 @@ export async function crearOrdenCompra(data: {
   notas?: string
   notas_internas?: string
   estado: "borrador" | "enviada"
+  incluye_iva?: boolean
+  tasa_iva?: number
 }) {
   const supabase = await createClient()
 
@@ -184,6 +187,12 @@ export async function crearOrdenCompra(data: {
     (sum, i) => sum + i.cantidad * i.precio_unitario,
     0
   )
+  const totalConDescuento = subtotal - 0 // descuento is 0 on creation
+  const incluye_iva = data.incluye_iva ?? true
+  const tasa_iva = data.tasa_iva ?? 0.21
+  const subtotalNeto = incluye_iva ? calcularNeto(totalConDescuento, tasa_iva) : totalConDescuento
+  const montoIva = incluye_iva ? (totalConDescuento - subtotalNeto) : 0
+
   const montoTotalUsd = cotizacionUsd
     ? Math.round((subtotal / cotizacionUsd) * 100) / 100
     : null
@@ -208,6 +217,10 @@ export async function crearOrdenCompra(data: {
       condicion_pago: data.condicion_pago || null,
       subtotal,
       descuento: 0,
+      incluye_iva,
+      tasa_iva,
+      subtotal_neto: subtotalNeto,
+      monto_iva: montoIva,
       notas: data.notas || null,
       notas_internas: data.notas_internas || null,
       cotizacion_usd: cotizacionUsd,
@@ -483,6 +496,13 @@ export async function registrarPagoProveedor(data: {
 }) {
   const supabase = await createClient()
 
+  // Snapshot TC dólar blue
+  let tcDolar: number | null = null
+  try {
+    tcDolar = await getCotizacionVenta("blue")
+  } catch { /* ignore */ }
+  const montoUsd = tcDolar ? Math.round((data.monto / tcDolar) * 100) / 100 : null
+
   const { data: pago, error } = await supabase
     .from("pagos_proveedor")
     .insert({
@@ -495,6 +515,8 @@ export async function registrarPagoProveedor(data: {
       comprobante_url: null,
       asiento_id: null,
       usuario_id: null,
+      tc_dolar: tcDolar,
+      monto_usd: montoUsd,
     })
     .select()
     .single()
