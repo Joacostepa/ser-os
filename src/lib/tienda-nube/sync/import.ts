@@ -189,62 +189,106 @@ export async function importCustomers(tiendaId: string, jobId: string) {
     .eq("id", jobId)
 
   let processed = 0
+  const errors: string[] = []
 
   try {
+    // Pre-load existing clients by email for fast dedup
+    const { data: existingClientes } = await supabase
+      .from("clientes")
+      .select("id, email")
+      .not("email", "is", null)
+
+    const emailToId = new Map<string, string>()
+    for (const c of existingClientes || []) {
+      if (c.email) emailToId.set(c.email.toLowerCase(), c.id)
+    }
+
+    // Pre-load existing TN customer junctions
+    const { data: existingJunctions } = await supabase
+      .from("clientes_tienda")
+      .select("tienda_nube_customer_id")
+      .eq("tienda_id", tienda.id)
+
+    const existingTnIds = new Set(existingJunctions?.map((j) => j.tienda_nube_customer_id) || [])
+
     for await (const customers of client.getCustomers()) {
+      // Collect new clients to batch insert
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const newClients: any[] = []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const customerMap: { customer: any; needsInsert: boolean; existingId?: string }[] = []
+
       for (const customer of customers) {
-        try {
-          // Dedup by email
-          let clienteId: string | null = null
+        const tnId = String(customer.id)
 
-          if (customer.email) {
-            const { data: existing } = await supabase
-              .from("clientes")
-              .select("id")
-              .eq("email", customer.email)
-              .single()
-
-            if (existing) clienteId = existing.id
-          }
-
-          if (!clienteId) {
-            const { data: newCliente, error } = await supabase
-              .from("clientes")
-              .insert({
-                nombre: customer.name || "Sin nombre",
-                email: customer.email || null,
-                telefono: customer.phone || null,
-                cuit: customer.identification || null,
-                categoria: "nuevo",
-              })
-              .select("id")
-              .single()
-
-            if (error) throw error
-            clienteId = newCliente.id
-          }
-
-          // Junction
-          await supabase
-            .from("clientes_tienda")
-            .upsert(
-              {
-                cliente_id: clienteId,
-                tienda_id: tienda.id,
-                tienda_nube_customer_id: String(customer.id),
-              },
-              { onConflict: "tienda_id,tienda_nube_customer_id" }
-            )
-
+        // Check if already linked via junction
+        if (existingTnIds.has(tnId)) {
           processed++
-        } catch {
-          // Skip individual errors
+          continue
         }
+
+        // Check if email already exists
+        const email = customer.email?.toLowerCase()
+        if (email && emailToId.has(email)) {
+          customerMap.push({ customer, needsInsert: false, existingId: emailToId.get(email) })
+        } else {
+          customerMap.push({ customer, needsInsert: true })
+          newClients.push({
+            nombre: customer.name || "Sin nombre",
+            email: customer.email || null,
+            telefono: customer.phone || null,
+            cuit: customer.identification || null,
+            categoria: "nuevo",
+          })
+        }
+      }
+
+      // Batch insert new clients
+      if (newClients.length > 0) {
+        const { data: inserted } = await supabase
+          .from("clientes")
+          .insert(newClients)
+          .select("id, email")
+
+        // Map inserted IDs back
+        if (inserted) {
+          let insertIdx = 0
+          for (const entry of customerMap) {
+            if (entry.needsInsert && insertIdx < inserted.length) {
+              entry.existingId = inserted[insertIdx].id
+              if (inserted[insertIdx].email) {
+                emailToId.set(inserted[insertIdx].email.toLowerCase(), inserted[insertIdx].id)
+              }
+              insertIdx++
+            }
+          }
+        }
+      }
+
+      // Batch upsert junctions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const junctions: any[] = []
+      for (const entry of customerMap) {
+        if (entry.existingId) {
+          junctions.push({
+            cliente_id: entry.existingId,
+            tienda_id: tienda.id,
+            tienda_nube_customer_id: String(entry.customer.id),
+          })
+          existingTnIds.add(String(entry.customer.id))
+        }
+        processed++
+      }
+
+      if (junctions.length > 0) {
+        await supabase
+          .from("clientes_tienda")
+          .upsert(junctions, { onConflict: "tienda_id,tienda_nube_customer_id" })
       }
 
       await supabase
         .from("sync_jobs")
-        .update({ processed_items: processed })
+        .update({ processed_items: processed, errors })
         .eq("id", jobId)
     }
 
@@ -253,15 +297,21 @@ export async function importCustomers(tiendaId: string, jobId: string) {
       .update({
         status: "completed",
         processed_items: processed,
+        errors,
         completed_at: new Date().toISOString(),
       })
       .eq("id", jobId)
+
+    await supabase
+      .from("tiendas")
+      .update({ ultima_sincronizacion: new Date().toISOString() })
+      .eq("id", tiendaId)
   } catch (err) {
     await supabase
       .from("sync_jobs")
       .update({
         status: "failed",
-        errors: [err instanceof Error ? err.message : "Fatal error"],
+        errors: [...errors, err instanceof Error ? err.message : "Fatal error"],
         completed_at: new Date().toISOString(),
       })
       .eq("id", jobId)
