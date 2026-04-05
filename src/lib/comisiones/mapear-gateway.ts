@@ -38,6 +38,9 @@ export function mapearMetodoManual(metodo: string, canal: string | null): string
   const mapa: Record<string, string> = {
     transferencia: "transferencia_directa",
     mercadopago: "mercadopago",
+    gocuotas: "gocuotas",
+    pago_nube_tarjeta: "pago_nube_tarjeta",
+    pago_nube_transferencia: "pago_nube_transferencia",
     efectivo: "efectivo",
     cheque: "transferencia_directa",
     otro: "transferencia_directa",
