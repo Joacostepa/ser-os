@@ -53,6 +53,7 @@ import type { EstadoCompra } from "@/types/database"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { ConfirmacionIVAModal } from "@/components/shared/confirmacion-iva-modal"
 import {
   ArrowLeft,
   Send,
@@ -79,6 +80,7 @@ export function CompraDetailView({ compra }: { compra: any }) {
   )
   const [pagoObs, setPagoObs] = useState("")
   const [pagoSubmitting, setPagoSubmitting] = useState(false)
+  const [confirmPagoOpen, setConfirmPagoOpen] = useState(false)
 
   const estadoConfig =
     ESTADO_COMPRA_CONFIG[compra.estado as EstadoCompra]
@@ -336,7 +338,7 @@ export function CompraDetailView({ compra }: { compra: any }) {
                 <DialogFooter>
                   <Button
                     disabled={pagoSubmitting}
-                    onClick={handlePago}
+                    onClick={() => setConfirmPagoOpen(true)}
                   >
                     {pagoSubmitting ? "Registrando..." : "Registrar pago"}
                   </Button>
@@ -414,7 +416,7 @@ export function CompraDetailView({ compra }: { compra: any }) {
               <DialogFooter>
                 <Button
                   disabled={pagoSubmitting}
-                  onClick={handlePago}
+                  onClick={() => setConfirmPagoOpen(true)}
                 >
                   {pagoSubmitting ? "Registrando..." : "Registrar pago"}
                 </Button>
@@ -951,6 +953,23 @@ export function CompraDetailView({ compra }: { compra: any }) {
           </div>
         </TabsContent>
       </Tabs>
+
+      <ConfirmacionIVAModal
+        open={confirmPagoOpen}
+        onClose={() => setConfirmPagoOpen(false)}
+        onConfirm={() => {
+          setConfirmPagoOpen(false)
+          handlePago()
+        }}
+        tipo="pago_proveedor"
+        titulo={`OC-${compra.numero_orden}`}
+        monto={Number(pagoMonto)}
+        incluyeIvaDefault={compra.incluye_iva}
+        proveedorNombre={compra.proveedor?.nombre}
+        condicionFiscal={compra.proveedor?.condicion_fiscal}
+        totalOC={Number(compra.subtotal) - Number(compra.descuento || 0)}
+        yaPagado={totalPagado}
+      />
     </div>
   )
 }

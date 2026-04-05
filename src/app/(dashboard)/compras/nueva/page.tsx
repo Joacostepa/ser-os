@@ -21,6 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { CONDICION_PAGO_OPTIONS } from "@/lib/constants"
 import { formatearMontoCompleto } from "@/lib/formatters"
+import { ConfirmacionIVAModal } from "@/components/shared/confirmacion-iva-modal"
 import { ArrowLeft, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -56,6 +57,8 @@ export default function NuevaCompraPage() {
   const [items, setItems] = useState<ItemForm[]>([
     { descripcion: "", cantidad: 1, precio_unitario: 0 },
   ])
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [submitEstado, setSubmitEstado] = useState<"borrador" | "enviada">("borrador")
 
   useEffect(() => {
     async function fetchSelects() {
@@ -436,17 +439,38 @@ export default function NuevaCompraPage() {
         <Button
           variant="outline"
           disabled={submitting}
-          onClick={() => handleSubmit("borrador")}
+          onClick={() => { setSubmitEstado("borrador"); setConfirmOpen(true) }}
         >
           {submitting ? "Guardando..." : "Guardar como borrador"}
         </Button>
         <Button
           disabled={submitting}
-          onClick={() => handleSubmit("enviada")}
+          onClick={() => { setSubmitEstado("enviada"); setConfirmOpen(true) }}
         >
           {submitting ? "Guardando..." : "Guardar y enviar"}
         </Button>
       </div>
+
+      <ConfirmacionIVAModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={(confirmedIva) => {
+          setIncluyeIva(confirmedIva)
+          setConfirmOpen(false)
+          handleSubmit(submitEstado)
+        }}
+        tipo="orden_compra"
+        titulo={`OC para ${proveedores.find(p => p.id === proveedorId)?.nombre || ""}`}
+        monto={total}
+        incluyeIvaDefault={incluyeIva}
+        tasaIva={tasaIva}
+        proveedorNombre={proveedores.find(p => p.id === proveedorId)?.nombre}
+        condicionFiscal={proveedores.find(p => p.id === proveedorId)?.condicion_fiscal}
+        onGuardarCondicionFiscal={async (condicion) => {
+          const { actualizarProveedor } = await import("@/lib/actions/proveedores")
+          await actualizarProveedor(proveedorId, { condicion_fiscal: condicion })
+        }}
+      />
     </div>
   )
 }

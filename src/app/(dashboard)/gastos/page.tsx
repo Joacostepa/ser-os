@@ -14,6 +14,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog"
+import { ConfirmacionIVAModal } from "@/components/shared/confirmacion-iva-modal"
 import { Plus, Check, Search, Repeat } from "lucide-react"
 import { type ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/shared/data-table"
@@ -78,6 +79,9 @@ export default function GastosPage() {
   const [formProveedorId, setFormProveedorId] = useState("")
   const [formRecurrente, setFormRecurrente] = useState(false)
   const [formFrecuencia, setFormFrecuencia] = useState("")
+
+  // IVA confirmation modal
+  const [confirmGastoOpen, setConfirmGastoOpen] = useState(false)
 
   // Marcar pagado dialog
   const [pagarDialogOpen, setPagarDialogOpen] = useState(false)
@@ -174,13 +178,16 @@ export default function GastosPage() {
     )
   }, [gastos, filtroBusqueda])
 
-  async function handleCrearGasto(e: React.FormEvent) {
+  function handleCrearGastoValidate(e: React.FormEvent) {
     e.preventDefault()
     if (!formDescripcion || !formCategoriaId || !formMonto) {
       toast.error("Completa los campos requeridos")
       return
     }
+    setConfirmGastoOpen(true)
+  }
 
+  async function handleGuardarGasto(confirmedIva: boolean) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cat = categorias.find((c: any) => c.id === Number(formCategoriaId))
     if (!cat) return
@@ -196,7 +203,7 @@ export default function GastosPage() {
         pagado: formPagado,
         metodo_pago: formPagado ? formMetodo || undefined : undefined,
         observaciones: formObservaciones || undefined,
-        incluye_iva: formIncluyeIva,
+        incluye_iva: confirmedIva,
         proveedor_id: formProveedorId && formProveedorId !== "none" ? formProveedorId : undefined,
         recurrente: formRecurrente,
         frecuencia: formRecurrente ? formFrecuencia || undefined : undefined,
@@ -488,7 +495,7 @@ export default function GastosPage() {
             <DialogHeader>
               <DialogTitle>Nuevo gasto</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCrearGasto} className="space-y-4">
+            <form onSubmit={handleCrearGastoValidate} className="space-y-4">
               {/* Descripcion */}
               <div className="space-y-2">
                 <Label>Descripcion</Label>
@@ -736,6 +743,23 @@ export default function GastosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmacionIVAModal
+        open={confirmGastoOpen}
+        onClose={() => setConfirmGastoOpen(false)}
+        onConfirm={(confirmedIva) => {
+          setFormIncluyeIva(confirmedIva)
+          setConfirmGastoOpen(false)
+          handleGuardarGasto(confirmedIva)
+        }}
+        tipo="gasto"
+        titulo={formDescripcion}
+        subtitulo={categorias.find(c => c.id === Number(formCategoriaId))?.nombre || ""}
+        monto={Number(formMonto)}
+        incluyeIvaDefault={formIncluyeIva}
+        proveedorNombre={proveedores.find(p => p.id === formProveedorId)?.nombre}
+        condicionFiscal={proveedores.find(p => p.id === formProveedorId)?.condicion_fiscal}
+      />
     </div>
   )
 }
