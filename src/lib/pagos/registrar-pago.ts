@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { crearAsiento } from "@/lib/contable/asientos"
 import { ejecutarTransicion } from "@/lib/maquina-estados"
 import { revalidatePath } from "next/cache"
-import type { PagoInput } from "./tipos"
+import type { PagoInput, PagoResult } from "./tipos"
 import { getSaldoPendiente, generarNumeroRecibo, conceptoPorTipo } from "./helpers"
 import { descomponerIVA } from "@/lib/iva"
 
@@ -14,7 +14,7 @@ import { descomponerIVA } from "@/lib/iva"
  * Handles: validation, DB insert, accounting entries (venta + CMV + cobro),
  * estado_pago update, and state machine transitions.
  */
-export async function registrarPago(input: PagoInput): Promise<{ pagoId: string }> {
+export async function registrarPago(input: PagoInput): Promise<PagoResult> {
   const supabase = await createClient()
 
   // 1. Get pedido data
@@ -36,14 +36,60 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
   // 2. Get saldo pendiente
   const saldo = await getSaldoPendiente(input.pedido_id)
 
+  // ═══ CAPA 1: Saldo pendiente = $0 → bloquear ═══
+  if (saldo <= 0.01) {
+    console.log(`Pedido ${input.pedido_id} ya está pagado. Ignorando.`)
+    return { duplicado: true, motivo: "pedido_ya_pagado" }
+  }
+
+  // Ajustar monto si excede saldo
+  if (input.monto > saldo + 0.01) {
+    input.monto = saldo
+  }
+
+  // ═══ CAPA 2: Pago similar en últimas 24hs ═══
+  if (!input.forzar_duplicado) {
+    const { data: pagoSimilar } = await supabase
+      .from("pagos")
+      .select("id, monto, created_at, origen")
+      .eq("pedido_id", input.pedido_id)
+      .eq("monto", input.monto)
+      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .limit(1)
+      .maybeSingle()
+
+    if (pagoSimilar) {
+      if (input.origen === "tienda_nube") {
+        console.log(`Pago duplicado de webhook ignorado — pedido ${input.pedido_id}`)
+        return { duplicado: true, motivo: "pago_similar_existe" }
+      }
+      // Manual: advertir a Sheila
+      const origenText = pagoSimilar.origen === "tienda_nube" ? "desde Tienda Nube" : "manual"
+      return {
+        duplicado: true,
+        motivo: "pago_similar_existe",
+        advertencia: `Ya hay un pago de $${Number(pagoSimilar.monto).toLocaleString("es-AR")} registrado recientemente (${origenText}). ¿Estás segura de que querés registrar otro pago por el mismo monto?`,
+      }
+    }
+  }
+
+  // ═══ CAPA 3: Idempotencia webhook por payment_id ═══
+  if (input.tienda_nube_payment_id) {
+    const { data: yaExiste } = await supabase
+      .from("pagos")
+      .select("id")
+      .eq("tienda_nube_payment_id", input.tienda_nube_payment_id)
+      .maybeSingle()
+
+    if (yaExiste) {
+      console.log(`Webhook pago ${input.tienda_nube_payment_id} ya procesado. Ignorando.`)
+      return { duplicado: true, motivo: "webhook_ya_procesado" }
+    }
+  }
+
   // 3. Validate
   if (input.monto <= 0) {
     throw new Error("El monto debe ser mayor a cero")
-  }
-  if (input.monto > saldo + 0.01) {
-    throw new Error(
-      `El monto ($${input.monto.toLocaleString("es-AR")}) supera el saldo pendiente ($${saldo.toLocaleString("es-AR")})`
-    )
   }
 
   // 4. Check if first payment
@@ -90,6 +136,8 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
       concepto,
       comprobante_url: input.comprobante_url || null,
       fecha: input.fecha,
+      origen: input.origen,
+      tienda_nube_payment_id: input.tienda_nube_payment_id || null,
       tc_dolar: tcDolar,
       monto_usd: montoUsd,
       notas: [

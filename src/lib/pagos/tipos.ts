@@ -10,4 +10,13 @@ export interface PagoInput {
   comprobante_url?: string
   observaciones?: string
   generar_recibo?: boolean
+  tienda_nube_payment_id?: string
+  forzar_duplicado?: boolean // skip capa 2 warning
+}
+
+export interface PagoResult {
+  pagoId?: string
+  duplicado?: boolean
+  motivo?: "pedido_ya_pagado" | "pago_similar_existe" | "webhook_ya_procesado"
+  advertencia?: string
 }

@@ -89,7 +89,7 @@ export function RegistrarPagoModal({
   const montoNum = parseFloat(monto) || 0
   const montoExcedeSaldo = !pagaTodo && montoNum > 0 && montoNum >= saldoPendiente - 0.01
 
-  async function handleSubmit() {
+  async function handleSubmit(forzar = false) {
     const montoFinal = pagaTodo ? saldoPendiente : montoNum
 
     if (montoFinal <= 0) {
@@ -113,7 +113,7 @@ export function RegistrarPagoModal({
 
     setLoading(true)
     try {
-      await registrarPago({
+      const result = await registrarPago({
         pedido_id: pedidoId,
         cliente_id: clienteId,
         monto: montoFinal,
@@ -123,7 +123,24 @@ export function RegistrarPagoModal({
         origen: "manual",
         observaciones: observaciones || undefined,
         generar_recibo: generarRecibo,
+        forzar_duplicado: forzar,
       })
+
+      if (result.duplicado) {
+        if (result.motivo === "pedido_ya_pagado") {
+          toast.error("Este pedido ya está pagado en su totalidad")
+        } else if (result.advertencia) {
+          // Show confirmation dialog
+          const confirmar = window.confirm(result.advertencia)
+          if (confirmar) {
+            setLoading(false)
+            return handleSubmit(true) // retry with force
+          }
+          toast("Pago cancelado")
+        }
+        setLoading(false)
+        return
+      }
 
       toast.success(`Pago de $${montoFinal.toLocaleString("es-AR")} registrado`)
       onSuccess?.()
@@ -324,7 +341,7 @@ export function RegistrarPagoModal({
             <Button variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={loading || (!pagaTodo && !monto) || !metodo}>
+            <Button onClick={() => handleSubmit()} disabled={loading || (!pagaTodo && !monto) || !metodo}>
               {loading ? "Registrando..." : "Registrar pago"}
             </Button>
           </DialogFooter>
