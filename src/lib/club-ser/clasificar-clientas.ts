@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getClubConfig } from "./config"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function calcularRacha(pedidos: any[]): number {
+function calcularRacha(pedidos: { fecha: string }[]): number {
   if (pedidos.length === 0) return 0
   let racha = 0
   const hoy = new Date()
@@ -12,8 +12,7 @@ function calcularRacha(pedidos: any[]): number {
   let anio = hoy.getFullYear()
 
   for (let i = 0; i < 24; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hay = pedidos.some((p: any) => {
+    const hay = pedidos.some((p) => {
       const f = new Date(p.fecha)
       return f.getMonth() === mes && f.getFullYear() === anio
     })
@@ -44,15 +43,13 @@ export async function clasificarClientas() {
   const config = await getClubConfig()
   const hoy = new Date()
 
-  // 1. Get all clients
-  const { data: clientes } = await supabase
-    .from("clientes")
-    .select("id")
+  // 1. Get all client IDs
+  const { data: clientes } = await supabase.from("clientes").select("id").limit(5000)
 
-  // 2. Get ALL pedidos separately (avoid embedded relation limits)
+  // 2. Get ALL pedidos separately
   const { data: pedidos } = await supabase
     .from("pedidos")
-    .select("id, cliente_id, monto_neto, monto_total, fecha_ingreso, created_at, estado_interno")
+    .select("cliente_id, monto_neto, monto_total, fecha_ingreso, created_at, estado_interno")
     .not("estado_interno", "eq", "cancelado")
     .order("fecha_ingreso", { ascending: false, nullsFirst: false })
     .limit(10000)
@@ -63,17 +60,17 @@ export async function clasificarClientas() {
     if (!p.cliente_id) continue
     const fecha = p.fecha_ingreso || p.created_at
     const monto = Number(p.monto_neto || p.monto_total || 0)
-    if (!pedidosPorCliente.has(p.cliente_id)) {
-      pedidosPorCliente.set(p.cliente_id, [])
-    }
+    if (!pedidosPorCliente.has(p.cliente_id)) pedidosPorCliente.set(p.cliente_id, [])
     pedidosPorCliente.get(p.cliente_id)!.push({ fecha, monto })
   }
 
+  // 4. Classify all clients in memory
   const contadores = { activas: 0, inactivas: 0, dormidas: 0, reactivacion: 0, nunca_compro: 0, vip: 0, estandar: 0 }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = []
 
   for (const cliente of clientes || []) {
     const pedidosCliente = pedidosPorCliente.get(cliente.id) || []
-    // Already sorted DESC by fecha_ingreso from the query
 
     const ultimaCompra = pedidosCliente[0]?.fecha ? new Date(pedidosCliente[0].fecha) : null
     const dias = ultimaCompra ? Math.floor((hoy.getTime() - ultimaCompra.getTime()) / 86400000) : null
@@ -95,9 +92,7 @@ export async function clasificarClientas() {
     const descuento = getDescuento(estado, nivel, config)
     const totalFacturado = pedidosCliente.reduce((s, p) => s + p.monto, 0)
 
-    const { data: existing } = await supabase.from("club_ser_clientas").select("mejor_racha").eq("cliente_id", cliente.id).single()
-
-    await supabase.from("club_ser_clientas").upsert({
+    rows.push({
       cliente_id: cliente.id,
       estado, nivel,
       promedio_compra: Math.round(promedio),
@@ -106,14 +101,20 @@ export async function clasificarClientas() {
       total_compras: pedidosCliente.length,
       total_facturado: Math.round(totalFacturado),
       racha_meses: racha,
-      mejor_racha: Math.max(racha, existing?.mejor_racha || 0),
+      mejor_racha: racha,
       descuento_actual: descuento,
       fecha_ultima_clasificacion: hoy.toISOString().split("T")[0],
       updated_at: new Date().toISOString(),
-    }, { onConflict: "cliente_id" })
+    })
 
     contadores[estado as keyof typeof contadores]++
     contadores[nivel as keyof typeof contadores]++
+  }
+
+  // 5. Batch upsert in chunks of 500
+  for (let i = 0; i < rows.length; i += 500) {
+    const chunk = rows.slice(i, i + 500)
+    await supabase.from("club_ser_clientas").upsert(chunk, { onConflict: "cliente_id" })
   }
 
   return { total: clientes?.length || 0, ...contadores }
