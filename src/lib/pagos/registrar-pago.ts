@@ -93,7 +93,7 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
       tc_dolar: tcDolar,
       monto_usd: montoUsd,
       notas: [
-        conceptoPorTipo(input.tipo_pago, numeroPedido),
+        await conceptoPorTipo(input.tipo_pago, numeroPedido),
         input.observaciones,
         input.referencia_externa ? `Ref: ${input.referencia_externa}` : null,
         numeroRecibo ? `Recibo: ${numeroRecibo}` : null,
@@ -222,7 +222,7 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
 
     asientoCobroId = await crearAsiento({
       fecha: input.fecha,
-      descripcion: `Cobro ${conceptoPorTipo(input.tipo_pago, numeroPedido)} - ${clienteNombre}`,
+      descripcion: `Cobro ${await conceptoPorTipo(input.tipo_pago, numeroPedido)} - ${clienteNombre}`,
       tipo: "cobro",
       referencia_tipo: "pago",
       referencia_id: pago.id,

@@ -69,11 +69,12 @@ export async function mapearGatewayTN(gateway: string): Promise<string> {
 
 /**
  * Returns a descriptive concept text for a payment type.
+ * Not exported — used only by registrar-pago.ts via direct import.
  */
-export async function conceptoPorTipo(
+function conceptoPorTipoFn(
   tipo: "anticipo" | "parcial" | "saldo" | "total",
   numeroPedido: string | null,
-): Promise<string> {
+): string {
   const ref = numeroPedido ? ` #${numeroPedido}` : ""
   switch (tipo) {
     case "anticipo":
@@ -87,4 +88,12 @@ export async function conceptoPorTipo(
     default:
       return `Pago pedido${ref}`
   }
+}
+
+// Wrap as async for "use server" export compatibility
+export async function conceptoPorTipo(
+  tipo: "anticipo" | "parcial" | "saldo" | "total",
+  numeroPedido: string | null,
+): Promise<string> {
+  return conceptoPorTipoFn(tipo, numeroPedido)
 }

@@ -151,8 +151,6 @@ const NOTIFICACION_TEMPLATES: Record<
 // Public API
 // ---------------------------------------------------------------------------
 
-export { NOTIFICACION_TEMPLATES }
-
 export async function crearNotificacion(input: {
   tipo: string
   datos: Record<string, unknown>
