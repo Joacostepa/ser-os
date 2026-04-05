@@ -148,6 +148,17 @@ export function CommandK({ open, onClose }: CommandKProps) {
         items.push({ tipo: "recientes", item: r as unknown as ResultItem })
       }
     } else {
+      // Show matching acciones rápidas first
+      const accionesFiltradas = filtrarAcciones(query)
+      if (accionesFiltradas.length > 0) {
+        for (const a of accionesFiltradas) {
+          items.push({
+            tipo: "acciones",
+            item: { tipo: "acciones", id: a.titulo, titulo: a.titulo, subtitulo: "", url: a.url || "", icono: a.icono } as ResultItem,
+          })
+        }
+      }
+      // Then API results
       for (const [tipo, list] of Object.entries(results)) {
         for (const item of list) {
           items.push({ tipo, item: item as ResultItem })
