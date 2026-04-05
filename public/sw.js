@@ -88,7 +88,8 @@ self.addEventListener('notificationclick', (event) => {
 // FETCH — network first, cache fallback
 // ═══════════════════════════════════════
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/api/')) return;
+  // Skip API calls and non-GET requests (cache only supports GET)
+  if (event.request.url.includes('/api/') || event.request.method !== 'GET') return;
 
   event.respondWith(
     fetch(event.request)

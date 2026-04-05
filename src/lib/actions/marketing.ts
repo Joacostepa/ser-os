@@ -11,7 +11,7 @@ export async function getDashboardMarketing(mes?: number, anio?: number): Promis
 
   // Get all club members
   const { data: clientas } = await supabase
-    .from("club_clientas")
+    .from("club_ser_clientas")
     .select("*, cliente:clientes(id, nombre, email)")
 
   const lista = clientas ?? []
@@ -25,12 +25,12 @@ export async function getDashboardMarketing(mes?: number, anio?: number): Promis
   const total = lista.length || 1
 
   // VIP count
-  const vipCount = lista.filter((c) => c.nivel === "VIP").length
+  const vipCount = lista.filter((c) => c.nivel === "vip").length
 
   // Last campaign
   const { data: lastCampana } = await supabase
-    .from("campanas_marketing")
-    .select("*, cupones:cupones_marketing(id, usado, monto_compra)")
+    .from("club_ser_campanas")
+    .select("*, cupones:club_ser_cupones(id, usado, monto_compra)")
     .order("created_at", { ascending: false })
     .limit(1)
     .single()
@@ -42,8 +42,8 @@ export async function getDashboardMarketing(mes?: number, anio?: number): Promis
 
   // Conversion by estado
   const { data: cuponesDetalle } = await supabase
-    .from("cupones_marketing")
-    .select("*, clienta:club_clientas(estado)")
+    .from("club_ser_cupones")
+    .select("*, clienta:club_ser_clientas(estado)")
     .eq("campana_id", lastCampana?.id ?? "")
 
   const conversionPorEstado = estados.map((estado) => {
@@ -88,7 +88,7 @@ export async function getClientasClub(filtros?: { estado?: string }): Promise<an
   const supabase = await createClient()
 
   let query = supabase
-    .from("club_clientas")
+    .from("club_ser_clientas")
     .select("*, cliente:clientes(id, nombre, email)")
     .order("created_at", { ascending: false })
 
@@ -102,17 +102,17 @@ export async function getClientasClub(filtros?: { estado?: string }): Promise<an
   const counts = {
     activas: lista.filter((c) => c.estado === "activa").length,
     inactivas: lista.filter((c) => c.estado === "inactiva").length,
-    vip: lista.filter((c) => c.nivel === "VIP").length,
+    vip: lista.filter((c) => c.nivel === "vip").length,
     total: lista.length,
   }
 
   // If filtering, re-count from all
   if (filtros?.estado && filtros.estado !== "todas") {
-    const { data: all } = await supabase.from("club_clientas").select("estado, nivel")
+    const { data: all } = await supabase.from("club_ser_clientas").select("estado, nivel")
     const allList = all ?? []
     counts.activas = allList.filter((c) => c.estado === "activa").length
     counts.inactivas = allList.filter((c) => c.estado === "inactiva").length
-    counts.vip = allList.filter((c) => c.nivel === "VIP").length
+    counts.vip = allList.filter((c) => c.nivel === "vip").length
     counts.total = allList.length
   }
 
@@ -136,8 +136,8 @@ export async function getClientasClub(filtros?: { estado?: string }): Promise<an
 export async function getClientaDetalle(clienteId: string): Promise<any> {
   const supabase = await createClient()
   const { data } = await supabase
-    .from("club_clientas")
-    .select("*, cliente:clientes(id, nombre, email, telefono), cupones:cupones_marketing(id, codigo, descuento, usado, fecha_uso, monto_compra, campana_id)")
+    .from("club_ser_clientas")
+    .select("*, cliente:clientes(id, nombre, email, telefono), cupones:club_ser_cupones(id, codigo, descuento, usado, fecha_uso, monto_compra, campana_id)")
     .eq("cliente_id", clienteId)
     .single()
 
@@ -148,8 +148,8 @@ export async function getClientaDetalle(clienteId: string): Promise<any> {
 export async function getCampanas(): Promise<any[]> {
   const supabase = await createClient()
   const { data } = await supabase
-    .from("campanas_marketing")
-    .select("*, cupones:cupones_marketing(id, usado, monto_compra)")
+    .from("club_ser_campanas")
+    .select("*, cupones:club_ser_cupones(id, usado, monto_compra)")
     .order("created_at", { ascending: false })
 
   return (data ?? []).map((c) => {
@@ -174,7 +174,7 @@ export async function getCampanas(): Promise<any[]> {
 export async function getCampanaDetalle(id: string): Promise<any> {
   const supabase = await createClient()
   const { data: campana } = await supabase
-    .from("campanas_marketing")
+    .from("club_ser_campanas")
     .select("*")
     .eq("id", id)
     .single()
@@ -182,8 +182,8 @@ export async function getCampanaDetalle(id: string): Promise<any> {
   if (!campana) return null
 
   const { data: cupones } = await supabase
-    .from("cupones_marketing")
-    .select("*, clienta:club_clientas(estado, nivel, cliente:clientes(id, nombre))")
+    .from("club_ser_cupones")
+    .select("*, clienta:club_ser_clientas(estado, nivel, cliente:clientes(id, nombre))")
     .eq("campana_id", id)
     .order("created_at", { ascending: false })
 
@@ -202,7 +202,7 @@ export async function getCampanaDetalle(id: string): Promise<any> {
     return acc
   }, {} as Record<string, number>)
 
-  const vipCount = cuponesLista.filter((c) => c.clienta?.nivel === "VIP").length
+  const vipCount = cuponesLista.filter((c) => c.clienta?.nivel === "vip").length
   const estCount = cuponesLista.length - vipCount
 
   return {
@@ -242,42 +242,46 @@ export async function prepararCampana(mes: number, anio: number): Promise<any> {
 
   // Check if campaign already exists
   const { data: existing } = await supabase
-    .from("campanas_marketing")
+    .from("club_ser_campanas")
     .select("id")
     .eq("mes", mes)
     .eq("anio", anio)
     .single()
 
   if (existing) {
-    throw new Error(`Ya existe una campana para ${mes}/${anio}`)
+    throw new Error(`Ya existe una campaña para ${mes}/${anio}`)
   }
 
-  const nombre = `Campana ${mes.toString().padStart(2, "0")}/${anio}`
+  // 1. Classify all clients
+  const { clasificarClientas } = await import("@/lib/club-ser/clasificar-clientas")
+  const contadores = await clasificarClientas()
 
+  const meses = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+  // 2. Create campaign record
   const { data: campana, error } = await supabase
-    .from("campanas_marketing")
-    .insert({ nombre, mes, anio, estado: "borrador" })
+    .from("club_ser_campanas")
+    .insert({
+      nombre: `Club SER — ${meses[mes]} ${anio}`,
+      mes, anio,
+      estado: "lista",
+      total_clientas: contadores.total,
+      activas: contadores.activas,
+      inactivas: contadores.inactivas,
+      dormidas: contadores.dormidas,
+      reactivacion: contadores.reactivacion,
+      nunca_compro: contadores.nunca_compro,
+      vip: contadores.vip,
+      estandar: contadores.estandar,
+    })
     .select()
     .single()
 
   if (error) throw new Error(error.message)
 
-  // Generate coupons for all club members
-  const { data: clientas } = await supabase
-    .from("club_clientas")
-    .select("id, estado, nivel, descuento_actual")
-
-  const cupones = (clientas ?? []).map((c) => ({
-    campana_id: campana.id,
-    clienta_id: c.id,
-    codigo: `SER-${mes.toString().padStart(2, "0")}${anio}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-    descuento: c.descuento_actual ?? 10,
-    usado: false,
-  }))
-
-  if (cupones.length > 0) {
-    await supabase.from("cupones_marketing").insert(cupones)
-  }
+  // 3. Generate coupons
+  const { generarCuponesCampana } = await import("@/lib/club-ser/generar-cupones")
+  await generarCuponesCampana(campana.id)
 
   return campana
 }
@@ -287,7 +291,7 @@ export async function aprobarCampana(id: string): Promise<any> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from("campanas_marketing")
+    .from("club_ser_campanas")
     .update({ estado: "aprobada", aprobada_at: new Date().toISOString() })
     .eq("id", id)
     .select()
@@ -326,8 +330,8 @@ export async function getCuponesHistorial(filtros?: { busqueda?: string; estado?
   const supabase = await createClient()
 
   let query = supabase
-    .from("cupones_marketing")
-    .select("*, clienta:club_clientas(estado, nivel, cliente:clientes(id, nombre)), campana:campanas_marketing(id, nombre)")
+    .from("club_ser_cupones")
+    .select("*, clienta:club_ser_clientas(estado, nivel, cliente:clientes(id, nombre)), campana:club_ser_campanas(id, nombre)")
     .order("created_at", { ascending: false })
 
   if (filtros?.campana_id && filtros.campana_id !== "todas") {
