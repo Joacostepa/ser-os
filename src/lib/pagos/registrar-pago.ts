@@ -269,6 +269,22 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
     },
   })
 
+  // Notify pago recibido
+  try {
+    const { crearNotificacion } = await import("@/lib/notificaciones/crear-notificacion")
+    await crearNotificacion({
+      tipo: "pago_recibido",
+      datos: {
+        monto: input.monto,
+        pedido_numero: numeroPedido,
+        cliente: clienteNombre,
+        tipo_pago: input.tipo_pago,
+        metodo: input.metodo_pago,
+      },
+      recurso_id: input.pedido_id,
+    })
+  } catch { /* ignore notification errors */ }
+
   // 13. Revalidate paths
   revalidatePath("/pedidos")
   revalidatePath(`/pedidos/${input.pedido_id}`)

@@ -1,7 +1,8 @@
 "use client"
 
-import { Bell, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
 import { CotizacionDolar } from "@/components/shared/cotizacion-dolar"
+import { NotificacionesBell } from "@/components/layout/notificaciones-bell"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 
@@ -31,6 +32,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   "flujo-de-caja": "Flujo de caja",
   "libro-diario": "Libro diario",
   "plan-de-cuentas": "Plan de cuentas",
+  notificaciones: "Notificaciones",
 }
 
 interface HeaderProps {
@@ -77,9 +79,7 @@ export function Header({ onMobileMenuOpen }: HeaderProps) {
 
         <CotizacionDolar />
 
-        <button className="text-stone-400 hover:text-stone-600 transition-colors p-1">
-          <Bell className="h-4 w-4" strokeWidth={1.5} />
-        </button>
+        <NotificacionesBell />
       </div>
 
       {/* Mobile header */}
@@ -96,9 +96,7 @@ export function Header({ onMobileMenuOpen }: HeaderProps) {
           SER Mayorista
         </span>
 
-        <button className="text-stone-400 hover:text-stone-600 transition-colors p-1">
-          <Bell className="h-4 w-4" strokeWidth={1.5} />
-        </button>
+        <NotificacionesBell />
       </div>
     </header>
   )

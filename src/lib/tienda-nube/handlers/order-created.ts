@@ -142,6 +142,22 @@ export async function handleOrderCreated(ctx: WebhookContext) {
     estado_nuevo: estadoInterno,
   })
 
+  // Notify pedido nuevo
+  try {
+    const clienteNombre = order.contact_name || order.customer?.name || "Sin nombre"
+    const { crearNotificacion } = await import("@/lib/notificaciones/crear-notificacion")
+    await crearNotificacion({
+      tipo: "pedido_nuevo",
+      datos: {
+        numero: String(order.number),
+        cliente: clienteNombre,
+        monto: montoTotal,
+        items_count: order.products?.length || 0,
+      },
+      recurso_id: pedido.id,
+    })
+  } catch { /* ignore notification errors */ }
+
   // Tasks are generated after classification + habilitacion, not on order creation
 }
 

@@ -38,6 +38,56 @@ export async function togglePaso(
 
   if (error) throw new Error(error.message)
 
+  // Check if all pasos are now complete (only when marking as done)
+  if (completado) {
+    try {
+      // Get the pedido_id for this paso
+      const { data: paso } = await supabase
+        .from("pedido_pasos")
+        .select("pedido_id")
+        .eq("id", pasoId)
+        .single()
+
+      if (paso?.pedido_id) {
+        const { count: totalPasos } = await supabase
+          .from("pedido_pasos")
+          .select("*", { count: "exact", head: true })
+          .eq("pedido_id", paso.pedido_id)
+
+        const { count: pasosCompletos } = await supabase
+          .from("pedido_pasos")
+          .select("*", { count: "exact", head: true })
+          .eq("pedido_id", paso.pedido_id)
+          .eq("completado", true)
+
+        if (totalPasos && pasosCompletos && totalPasos === pasosCompletos) {
+          const { data: pedido } = await supabase
+            .from("pedidos")
+            .select("numero_tn, numero_interno, cliente:clientes(nombre)")
+            .eq("id", paso.pedido_id)
+            .single()
+
+          const numero =
+            pedido?.numero_tn || pedido?.numero_interno || paso.pedido_id.slice(0, 8)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cliente = (pedido?.cliente as any)?.nombre || ""
+
+          const { crearNotificacion } = await import(
+            "@/lib/notificaciones/crear-notificacion"
+          )
+          await crearNotificacion({
+            tipo: "checklist_completo",
+            datos: { numero, cliente },
+            recurso_id: paso.pedido_id,
+            actor_id: usuarioId || undefined,
+          })
+        }
+      }
+    } catch {
+      /* ignore notification errors */
+    }
+  }
+
   revalidatePath("/pedidos")
   revalidatePath("/tareas")
 }

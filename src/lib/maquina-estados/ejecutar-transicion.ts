@@ -137,7 +137,43 @@ export async function ejecutarTransicion(
     }
   }
 
-  // 8. Revalidar paths
+  // 8. Notifications for specific transitions
+  if (estadoDestino === "habilitado" || estadoDestino === "despachado") {
+    try {
+      const { data: pedidoData } = await supabase
+        .from("pedidos")
+        .select("numero_tn, numero_interno, tipo, cliente:clientes(nombre)")
+        .eq("id", pedidoId)
+        .single()
+
+      const numero =
+        pedidoData?.numero_tn || pedidoData?.numero_interno || pedidoId.slice(0, 8)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cliente = (pedidoData?.cliente as any)?.nombre || ""
+
+      const { crearNotificacion } = await import(
+        "@/lib/notificaciones/crear-notificacion"
+      )
+
+      if (estadoDestino === "habilitado") {
+        await crearNotificacion({
+          tipo: "pedido_habilitado",
+          datos: { numero, cliente, tipo: pedidoData?.tipo || "" },
+          recurso_id: pedidoId,
+        })
+      } else if (estadoDestino === "despachado") {
+        await crearNotificacion({
+          tipo: "pedido_despachado",
+          datos: { numero, cliente },
+          recurso_id: pedidoId,
+        })
+      }
+    } catch {
+      /* ignore notification errors */
+    }
+  }
+
+  // 9. Revalidar paths
   revalidatePath("/pedidos")
   revalidatePath(`/pedidos/${pedidoId}`)
 }
