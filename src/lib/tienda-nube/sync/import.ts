@@ -284,17 +284,46 @@ export async function importOrders(tiendaId: string, jobId: string) {
     // Pre-load ALL existing TN order IDs in one query to skip them instantly
     const { data: existingOrders } = await supabase
       .from("pedidos")
-      .select("tienda_nube_id")
+      .select("tienda_nube_id, estado_interno, monto_pagado")
       .eq("tienda_id", tienda.id)
       .not("tienda_nube_id", "is", null)
 
-    const existingTnIds = new Set(existingOrders?.map((o) => o.tienda_nube_id) || [])
+    const existingMap = new Map<string, { estado_interno: string; monto_pagado: number }>()
+    for (const o of existingOrders || []) {
+      existingMap.set(o.tienda_nube_id, { estado_interno: o.estado_interno, monto_pagado: Number(o.monto_pagado || 0) })
+    }
+
+    // Fetch USD rate once for all orders
+    let cotizacionUsd: number | null = null
+    try {
+      const { getCotizacionVenta } = await import("@/lib/dolar-api")
+      cotizacionUsd = await getCotizacionVenta("blue")
+    } catch { /* ignore */ }
 
     for await (const orders of client.getOrders({ sort_by: "created_at-asc" })) {
       for (const order of orders) {
         try {
-          // Skip if already exists — instant check via Set (no DB query)
-          if (existingTnIds.has(String(order.id))) {
+          const tnId = String(order.id)
+          const isPaid = order.payment_status === "paid"
+          const montoTotal = parseFloat(order.total || "0")
+          const montoPagado = isPaid ? montoTotal : 0
+
+          // If already exists, update estado/pago if changed
+          const existing = existingMap.get(tnId)
+          if (existing) {
+            const nuevoEstado: EstadoInterno = order.status === "cancelled"
+              ? "cancelado"
+              : order.status === "closed"
+                ? "cerrado"
+                : isPaid ? "sena_recibida" : "nuevo"
+
+            if (existing.estado_interno !== nuevoEstado || existing.monto_pagado !== montoPagado) {
+              await supabase.from("pedidos").update({
+                estado_interno: nuevoEstado,
+                estado_publico: ESTADO_INTERNO_A_PUBLICO[nuevoEstado],
+                monto_pagado: montoPagado,
+              }).eq("tienda_nube_id", tnId).eq("tienda_id", tienda.id)
+            }
             processed++
             continue
           }
@@ -302,7 +331,6 @@ export async function importOrders(tiendaId: string, jobId: string) {
           // Find or create customer
           const clienteId = await findOrCreateClienteFromOrder(supabase, tienda, order)
 
-          const isPaid = order.payment_status === "paid"
           const estadoInterno: EstadoInterno = order.status === "cancelled"
             ? "cancelado"
             : order.status === "closed"
@@ -310,17 +338,20 @@ export async function importOrders(tiendaId: string, jobId: string) {
               : isPaid ? "sena_recibida" : "nuevo"
           const estadoPublico = ESTADO_INTERNO_A_PUBLICO[estadoInterno]
 
-          const montoTotal = parseFloat(order.total || "0")
-          const montoPagado = isPaid ? montoTotal : 0
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cuponesUsados = (order as any).coupon
+            ? (Array.isArray((order as any).coupon) ? (order as any).coupon : [(order as any).coupon])
+            : []
 
           const { data: pedido, error: pedidoError } = await supabase
             .from("pedidos")
             .insert({
               numero_tn: String(order.number),
-              tienda_nube_id: String(order.id),
+              tienda_nube_id: tnId,
               tienda_id: tienda.id,
               cliente_id: clienteId,
-              tipo: "estandar",
+              canal: "tienda_nube",
+              tipo: "sin_clasificar",
               estado_interno: estadoInterno,
               estado_publico: estadoPublico,
               prioridad: "normal",
@@ -332,11 +363,24 @@ export async function importOrders(tiendaId: string, jobId: string) {
               tipo_despacho: order.shipping_address ? "envio" : "retiro_oficina",
               datos_envio: order.shipping_address,
               observaciones: order.note || null,
+              cupones_usados: cuponesUsados,
+              cotizacion_usd: cotizacionUsd,
+              cotizacion_tipo: "blue",
+              monto_total_usd: cotizacionUsd ? Math.round((montoTotal / cotizacionUsd) * 100) / 100 : null,
             })
             .select()
             .single()
 
           if (pedidoError) throw pedidoError
+
+          // Create snapshot of original TN order
+          try {
+            await supabase.from("pedido_snapshot_tn").insert({
+              pedido_id: pedido.id,
+              data_original: order,
+              tienda_nube_order_id: tnId,
+            })
+          } catch { /* ignore if snapshot table doesn't exist */ }
 
           // Create items
           if (order.products?.length > 0) {
