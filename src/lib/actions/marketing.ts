@@ -43,12 +43,13 @@ export async function getDashboardMarketing(mes?: number, anio?: number): Promis
   // Conversion by estado
   const { data: cuponesDetalle } = await supabase
     .from("club_ser_cupones")
-    .select("*, clienta:club_ser_clientas(estado)")
+    .select("estado_cliente, usado")
     .eq("campana_id", lastCampana?.id ?? "")
 
   const conversionPorEstado = estados.map((estado) => {
-    const del = (cuponesDetalle ?? []).filter((c) => c.clienta?.estado === estado)
-    const usadosDel = del.filter((c) => c.usado)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const del = (cuponesDetalle ?? []).filter((c: any) => c.estado_cliente === estado)
+    const usadosDel = del.filter((c: { usado: boolean }) => c.usado)
     return {
       estado,
       total: del.length,
@@ -90,7 +91,7 @@ export async function getClientasClub(filtros?: { estado?: string }): Promise<an
   let query = supabase
     .from("club_ser_clientas")
     .select("*, cliente:clientes(id, nombre, email)")
-    .order("created_at", { ascending: false })
+    .order("updated_at", { ascending: false })
 
   if (filtros?.estado && filtros.estado !== "todas") {
     query = query.eq("estado", filtros.estado)
@@ -183,40 +184,43 @@ export async function getCampanaDetalle(id: string): Promise<any> {
 
   const { data: cupones } = await supabase
     .from("club_ser_cupones")
-    .select("*, clienta:club_ser_clientas(estado, nivel, cliente:clientes(id, nombre))")
+    .select("*, cliente:clientes(id, nombre)")
     .eq("campana_id", id)
     .order("created_at", { ascending: false })
+    .limit(200)
 
   const { data: emailLogs } = await supabase
-    .from("email_logs_marketing")
+    .from("club_ser_emails")
     .select("*")
     .eq("campana_id", id)
 
   const cuponesLista = cupones ?? []
   const logs = emailLogs ?? []
 
-  // Count by estado
+  // Count by estado from the cupones' estado_cliente field
   const estados = ["activa", "inactiva", "dormida", "reactivacion", "nunca_compro"]
   const countByEstado = estados.reduce((acc, estado) => {
-    acc[estado] = cuponesLista.filter((c) => c.clienta?.estado === estado).length
+    acc[estado] = cuponesLista.filter((c) => c.estado_cliente === estado).length
     return acc
   }, {} as Record<string, number>)
 
-  const vipCount = cuponesLista.filter((c) => c.clienta?.nivel === "vip").length
+  const vipCount = cuponesLista.filter((c) => c.nivel_cliente === "vip").length
   const estCount = cuponesLista.length - vipCount
 
   return {
     ...campana,
     cupones: cuponesLista.map((c) => ({
       id: c.id,
-      cliente_nombre: c.clienta?.cliente?.nombre ?? "---",
-      cliente_id: c.clienta?.cliente?.id,
-      estado_clienta: c.clienta?.estado,
-      nivel: c.clienta?.nivel,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cliente_nombre: (c.cliente as any)?.nombre ?? "---",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cliente_id: (c.cliente as any)?.id,
+      estado_clienta: c.estado_cliente,
+      nivel: c.nivel_cliente,
       codigo: c.codigo,
-      descuento: c.descuento,
+      descuento: c.valor,
       usado: c.usado,
-      pedido_id: c.pedido_id,
+      pedido_id: c.usado_en_pedido_id,
       fecha_uso: c.fecha_uso,
       monto_compra: c.monto_compra,
     })),
@@ -305,7 +309,7 @@ export async function aprobarCampana(id: string): Promise<any> {
 export async function getClubConfigAction(): Promise<Record<string, any>> {
   const supabase = await createClient()
   const { data } = await supabase
-    .from("club_config")
+    .from("club_ser_config")
     .select("clave, valor")
 
   const config: Record<string, string> = {}
@@ -319,7 +323,7 @@ export async function updateClubConfig(clave: string, valor: string): Promise<vo
   const supabase = await createClient()
 
   const { error } = await supabase
-    .from("club_config")
+    .from("club_ser_config")
     .upsert({ clave, valor }, { onConflict: "clave" })
 
   if (error) throw new Error(error.message)
@@ -331,8 +335,9 @@ export async function getCuponesHistorial(filtros?: { busqueda?: string; estado?
 
   let query = supabase
     .from("club_ser_cupones")
-    .select("*, clienta:club_ser_clientas(estado, nivel, cliente:clientes(id, nombre)), campana:club_ser_campanas(id, nombre)")
+    .select("*, cliente:clientes(id, nombre), campana:club_ser_campanas(id, nombre)")
     .order("created_at", { ascending: false })
+    .limit(200)
 
   if (filtros?.campana_id && filtros.campana_id !== "todas") {
     query = query.eq("campana_id", filtros.campana_id)
@@ -348,21 +353,22 @@ export async function getCuponesHistorial(filtros?: { busqueda?: string; estado?
 
   if (filtros?.busqueda) {
     const term = filtros.busqueda.toLowerCase()
-    lista = lista.filter(
-      (c) =>
-        c.codigo?.toLowerCase().includes(term) ||
-        c.clienta?.cliente?.nombre?.toLowerCase().includes(term)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    lista = lista.filter((c: any) =>
+      c.codigo?.toLowerCase().includes(term) ||
+      (c.cliente as any)?.nombre?.toLowerCase().includes(term)
     )
   }
 
-  return lista.map((c) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return lista.map((c: any) => ({
     id: c.id,
     codigo: c.codigo,
-    cliente_nombre: c.clienta?.cliente?.nombre ?? "---",
-    cliente_id: c.clienta?.cliente?.id,
-    estado_clienta: c.clienta?.estado,
-    nivel: c.clienta?.nivel,
-    descuento: c.descuento,
+    cliente_nombre: c.cliente?.nombre ?? "---",
+    cliente_id: c.cliente?.id,
+    estado_clienta: c.estado_cliente,
+    nivel: c.nivel_cliente,
+    descuento: c.valor,
     usado: c.usado,
     fecha_uso: c.fecha_uso,
     monto_compra: c.monto_compra,
