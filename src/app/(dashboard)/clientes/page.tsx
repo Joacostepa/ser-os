@@ -80,17 +80,30 @@ export default function ClientesPage() {
   useEffect(() => {
     async function fetchClientes() {
       setLoading(true)
-      let query = supabase
-        .from("clientes")
-        .select("*, pedidos(count)")
-        .order("created_at", { ascending: false })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allData: any[] = []
+      let from = 0
+      const pageSize = 1000
 
-      if (busqueda) {
-        query = query.or(`nombre.ilike.%${busqueda}%,email.ilike.%${busqueda}%`)
+      while (true) {
+        let query = supabase
+          .from("clientes")
+          .select("*, pedidos(count)")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1)
+
+        if (busqueda) {
+          query = query.or(`nombre.ilike.%${busqueda}%,email.ilike.%${busqueda}%`)
+        }
+
+        const { data } = await query
+        if (!data || data.length === 0) break
+        allData.push(...data)
+        if (data.length < pageSize) break
+        from += pageSize
       }
 
-      const { data } = await query
-      setClientes(data || [])
+      setClientes(allData)
       setLoading(false)
     }
 
