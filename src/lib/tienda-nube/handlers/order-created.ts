@@ -33,9 +33,9 @@ export async function handleOrderCreated(ctx: WebhookContext) {
 
   // Determine payment status
   // Paid orders stay in 'nuevo' (not auto-habilitado) until classified
-  // Unpaid orders go to 'pendiente_de_sena'
+  // Unpaid orders go to 'pendiente_sena'
   const isPaid = order.payment_status === "paid"
-  const estadoInterno: EstadoInterno = isPaid ? "nuevo" : "pendiente_de_sena"
+  const estadoInterno: EstadoInterno = isPaid ? "nuevo" : "pendiente_sena"
   const estadoPublico = ESTADO_INTERNO_A_PUBLICO[estadoInterno]
 
   const montoTotal = parseFloat(order.total || "0")
