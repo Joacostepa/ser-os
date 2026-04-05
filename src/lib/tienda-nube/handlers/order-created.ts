@@ -135,6 +135,15 @@ export async function handleOrderCreated(ctx: WebhookContext) {
     )
   }
 
+  // Save coupons used (for Club SER tracking)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cuponesUsados = (order as any).coupon
+    ? (Array.isArray((order as any).coupon) ? (order as any).coupon : [(order as any).coupon])
+    : []
+  if (cuponesUsados.length > 0) {
+    await supabase.from("pedidos").update({ cupones_usados: cuponesUsados }).eq("id", pedido.id)
+  }
+
   // Log in history
   await supabase.from("historial_pedido").insert({
     pedido_id: pedido.id,

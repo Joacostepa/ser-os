@@ -3,6 +3,30 @@
     {
       "path": "/api/cron/detectar-estancados",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/club-ser/preparar-campana",
+      "schedule": "0 12 28 * *"
+    },
+    {
+      "path": "/api/cron/club-ser/enviar-dia1",
+      "schedule": "0 13 1 * *"
+    },
+    {
+      "path": "/api/cron/club-ser/enviar-dia10",
+      "schedule": "0 13 10 * *"
+    },
+    {
+      "path": "/api/cron/club-ser/enviar-dia27",
+      "schedule": "0 13 27 * *"
+    },
+    {
+      "path": "/api/cron/club-ser/trackear-cupones",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/club-ser/cerrar-mes",
+      "schedule": "0 14 1 * *"
     }
   ]
 }

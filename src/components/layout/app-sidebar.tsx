@@ -18,6 +18,7 @@ import {
   Zap,
   Wallet,
   Receipt,
+  Megaphone,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { label: "Compras", href: "/compras", icon: ShoppingBag },
   { label: "Gastos", href: "/gastos", icon: Receipt },
   { label: "Insumos", href: "/insumos", icon: Boxes },
+  { label: "Marketing", href: "/marketing", icon: Megaphone },
   { label: "Finanzas", href: "/finanzas", icon: Wallet },
 ]
 
