@@ -350,7 +350,30 @@ export async function importOrders(tiendaId: string, jobId: string) {
       cotizacionUsd = await getCotizacionVenta("blue")
     } catch { /* ignore */ }
 
-    for await (const orders of client.getOrders({ sort_by: "created_at-asc" })) {
+    // Smart filter: if we have existing orders, only fetch what's missing
+    // Get the oldest imported order date — anything before that is missing
+    // Get the newest imported order date — anything after that is missing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filters: Record<string, string> = { sort_by: "created_at-asc" }
+
+    if (existingMap.size > 0) {
+      // Find the oldest imported order to know our coverage window
+      const { data: oldestImported } = await supabase
+        .from("pedidos")
+        .select("fecha_ingreso")
+        .eq("tienda_id", tienda.id)
+        .not("tienda_nube_id", "is", null)
+        .order("fecha_ingreso", { ascending: true })
+        .limit(1)
+        .single()
+
+      if (oldestImported?.fecha_ingreso) {
+        // We have orders from this date onward — fetch older ones first
+        filters.created_at_max = oldestImported.fecha_ingreso
+      }
+    }
+
+    for await (const orders of client.getOrders(filters)) {
       for (const order of orders) {
         try {
           const tnId = String(order.id)
