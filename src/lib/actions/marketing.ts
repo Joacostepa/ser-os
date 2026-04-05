@@ -94,7 +94,11 @@ export async function getClientasClub(filtros?: { estado?: string }): Promise<an
     .order("updated_at", { ascending: false })
 
   if (filtros?.estado && filtros.estado !== "todas") {
-    query = query.eq("estado", filtros.estado)
+    if (filtros.estado === "vip") {
+      query = query.eq("nivel", "vip")
+    } else {
+      query = query.eq("estado", filtros.estado)
+    }
   }
 
   const { data } = await query
