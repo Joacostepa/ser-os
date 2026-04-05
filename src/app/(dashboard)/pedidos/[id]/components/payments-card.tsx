@@ -214,6 +214,8 @@ export function PaymentsCard({ pedido, userRol = "admin" }: { pedido: any; userR
         montoPagado={montoPagado}
         saldoPendiente={saldo}
         numeroPedido={numeroPedido}
+        canal={pedido.canal}
+        cantidadPagos={pagos.length}
         onSuccess={handleSuccess}
       />
     </>
