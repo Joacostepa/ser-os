@@ -2,7 +2,7 @@
 -- 011: Portal de seguimiento del cliente
 -- ============================================================
 
-ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS codigo_seguimiento_portal VARCHAR(20);
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS codigo_seguimiento_portal VARCHAR(100);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pedidos_codigo_portal ON pedidos(codigo_seguimiento_portal) WHERE codigo_seguimiento_portal IS NOT NULL;
 
 -- Copy existing codigo_seguimiento to portal code for existing pedidos

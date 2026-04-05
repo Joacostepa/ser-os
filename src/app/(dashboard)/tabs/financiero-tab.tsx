@@ -57,8 +57,8 @@ export function FinancieroTab({
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
@@ -76,7 +76,7 @@ export function FinancieroTab({
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <MetricCard
           label="Total a cobrar"
           value={formatearMonto(data.totalACobrar)}
@@ -95,6 +95,12 @@ export function FinancieroTab({
           label="Flujo de caja"
           value={formatearMonto(data.flujoCaja)}
           valueColor={data.flujoCaja >= 0 ? "text-green-600" : "text-red-600"}
+        />
+        <MetricCard
+          label="Comisiones pasarela"
+          value={formatearMonto(data.totalComisiones || 0)}
+          subtitle={data.totalCobros > 0 ? `${((data.totalComisiones || 0) / data.totalCobros * 100).toFixed(1)}% de cobros` : ""}
+          valueColor="text-red-600"
         />
       </div>
 
@@ -153,9 +159,12 @@ export function FinancieroTab({
             <KPIRow label="IVA Debito (ventas)" value={formatearMontoCompleto(iva.ivaDebito)} />
             <KPIRow label="(-) IVA Credito compras" value={<span className="text-red-600">-{formatearMontoCompleto(iva.ivaCreditoCompras)}</span>} />
             <KPIRow label="(-) IVA Credito gastos" value={<span className="text-red-600">-{formatearMontoCompleto(iva.ivaCreditoGastos)}</span>} />
+            {iva.ivaCreditoComisiones > 0 && (
+              <KPIRow label="(-) IVA Credito comisiones" value={<span className="text-red-600">-{formatearMontoCompleto(iva.ivaCreditoComisiones)}</span>} />
+            )}
             <KPIRow label="= Saldo AFIP" value={
-              <span className={`font-semibold ${iva.saldoAFIP >= 0 ? "text-red-600" : "text-green-600"}`}>
-                {formatearMontoCompleto(Math.abs(iva.saldoAFIP))} {iva.saldoAFIP >= 0 ? "(a pagar)" : "(a favor)"}
+              <span className={`font-semibold ${iva.saldoAPagar >= 0 ? "text-red-600" : "text-green-600"}`}>
+                {formatearMontoCompleto(Math.abs(iva.saldoAPagar))} {iva.saldoAPagar >= 0 ? "(a pagar)" : "(a favor)"}
               </span>
             } bold />
           </div>

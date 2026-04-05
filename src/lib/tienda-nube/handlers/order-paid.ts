@@ -46,6 +46,28 @@ export async function handleOrderPaid(ctx: WebhookContext) {
     })
   }
 
+  // Calculate and save commission
+  try {
+    const { calcularComision } = await import("@/lib/comisiones/calcular-comision")
+    const { mapearGatewayTN } = await import("@/lib/comisiones/mapear-gateway")
+
+    const metodoComision = mapearGatewayTN(
+      order.gateway || "",
+      order.payment_details?.method,
+    )
+    const comision = await calcularComision(supabase, montoTotal, metodoComision, "tienda_nube")
+
+    if (comision.total_comisiones > 0) {
+      await supabase.from("comisiones_pedido").insert({
+        pedido_id: pedido.id,
+        pago_id: null,
+        ...comision,
+      })
+    }
+  } catch (err) {
+    console.error("Error al calcular comisión en order/paid:", err)
+  }
+
   await supabase.from("historial_pedido").insert({
     pedido_id: pedido.id,
     accion: `Pago confirmado desde Tienda Nube (${tienda.canal})`,

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, FileText, Plug, Workflow } from "lucide-react"
+import { Users, FileText, Plug, Workflow, Percent } from "lucide-react"
 import Link from "next/link"
 
 const CONFIG_SECTIONS = [
@@ -26,6 +26,12 @@ const CONFIG_SECTIONS = [
     description: "Configuración de API y webhooks",
     href: "/configuracion/integracion",
     icon: Plug,
+  },
+  {
+    title: "Comisiones",
+    description: "Tasas de comisión por pasarela de pago",
+    href: "/configuracion/comisiones",
+    icon: Percent,
   },
 ]
 

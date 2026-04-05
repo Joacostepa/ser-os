@@ -36,6 +36,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   "libro-diario": "Libro diario",
   "plan-de-cuentas": "Plan de cuentas",
   notificaciones: "Notificaciones",
+  comisiones: "Comisiones",
 }
 
 interface HeaderProps {

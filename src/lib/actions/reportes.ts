@@ -525,25 +525,40 @@ export async function getRendimientoEquipo(desde: string, hasta: string) {
 export async function getRentabilidadPorPedido(desde: string, hasta: string) {
   const supabase = await createClient()
 
-  const { data } = await supabase
-    .from("pedidos")
-    .select("id, numero_tn, numero_interno, monto_total, monto_neto, monto_total_usd, cliente:clientes(nombre), items:items_pedido(cantidad, costo_unitario)")
-    .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
-    .not("estado_interno", "eq", "cancelado")
-    .order("monto_total", { ascending: false }).limit(50)
+  const [{ data }, { data: comisionesData }] = await Promise.all([
+    supabase
+      .from("pedidos")
+      .select("id, numero_tn, numero_interno, monto_total, monto_neto, monto_total_usd, cliente:clientes(nombre), items:items_pedido(cantidad, costo_unitario)")
+      .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
+      .not("estado_interno", "eq", "cancelado")
+      .order("monto_total", { ascending: false }).limit(50),
+    supabase
+      .from("comisiones_pedido")
+      .select("pedido_id, total_comisiones"),
+  ])
+
+  // Build comisiones map by pedido_id
+  const comisionesMap: Record<string, number> = {}
+  comisionesData?.forEach((c) => {
+    comisionesMap[c.pedido_id] = (comisionesMap[c.pedido_id] || 0) + Number(c.total_comisiones)
+  })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((p: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const costo = p.items?.reduce((s: number, i: any) => s + (Number(i.costo_unitario || 0) * Number(i.cantidad)), 0) ?? 0
     const monto = neto(p.monto_neto, p.monto_total)
+    const comisiones = comisionesMap[p.id] || 0
     const margen = monto - costo
+    const margenReal = monto - costo - comisiones
     return {
       id: p.id,
       numero: p.numero_tn || p.numero_interno || p.id.slice(0, 8),
       cliente: p.cliente?.nombre || "\u2014",
-      monto, costo, margen,
+      monto, costo, comisiones, margen,
       margen_pct: monto > 0 ? (margen / monto) * 100 : 0,
+      margen_real: margenReal,
+      margen_real_pct: monto > 0 ? (margenReal / monto) * 100 : 0,
       usd: Number(p.monto_total_usd || 0),
     }
   })
@@ -578,18 +593,24 @@ export async function getRentabilidadPorCliente(desde: string, hasta: string) {
 export async function getEstadoResultados(desde: string, hasta: string) {
   const supabase = await createClient()
 
-  const [{ data: pedidos }, { data: gastosData }, { data: pagosProveedor }] = await Promise.all([
+  const desdeDate = desde.split("T")[0]
+  const hastaDate = hasta.split("T")[0]
+
+  const [{ data: pedidos }, { data: gastosData }, { data: pagosProveedor }, { data: comisionesData }] = await Promise.all([
     supabase.from("pedidos")
       .select("monto_total, monto_neto, items:items_pedido(cantidad, costo_unitario)")
       .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
       .not("estado_interno", "eq", "cancelado"),
     supabase.from("gastos")
       .select("monto, cuenta:cuentas(nombre)")
-      .gte("fecha", desde.split("T")[0]).lte("fecha", hasta.split("T")[0]),
+      .gte("fecha", desdeDate).lte("fecha", hastaDate),
     supabase.from("pagos")
       .select("monto")
       .eq("tipo", "pago_proveedor")
-      .gte("fecha", desde.split("T")[0]).lte("fecha", hasta.split("T")[0]),
+      .gte("fecha", desdeDate).lte("fecha", hastaDate),
+    supabase.from("comisiones_pedido")
+      .select("comision_pasarela_neta, comision_tn, created_at")
+      .gte("created_at", desde).lte("created_at", hasta),
   ])
 
   const ventasBrutas = pedidos?.reduce((s, p) => s + neto(p.monto_neto, p.monto_total), 0) ?? 0
@@ -613,13 +634,19 @@ export async function getEstadoResultados(desde: string, hasta: string) {
   const totalGastos = gastosData?.reduce((s, g) => s + Number(g.monto), 0) ?? 0
   const totalPagosProveedor = pagosProveedor?.reduce((s, p) => s + Number(p.monto), 0) ?? 0
 
+  // Comisiones de pasarela (neto, sin IVA — el IVA es CF, no gasto)
+  const comisionesPasarela = comisionesData?.reduce((s, c) =>
+    s + Number(c.comision_pasarela_neta) + Number(c.comision_tn), 0) ?? 0
+
   const margenBruto = ventasBrutas - cmv
   const gastosOperativos = totalGastos + totalPagosProveedor
-  const resultado = margenBruto - gastosOperativos
+  const resultado = margenBruto - comisionesPasarela - gastosOperativos
 
   return {
     ventasBrutas, cmv, margenBruto,
     margenBrutoPct: ventasBrutas > 0 ? (margenBruto / ventasBrutas) * 100 : 0,
+    comisionesPasarela,
+    comisionesPasarelaPct: ventasBrutas > 0 ? (comisionesPasarela / ventasBrutas) * 100 : 0,
     gastosOperativos,
     gastosDesglose,
     resultado,
@@ -704,7 +731,7 @@ export async function getMetricasFinancieras(desde: string, hasta: string) {
   const desdeDate = desde.split("T")[0]
   const hastaDate = hasta.split("T")[0]
 
-  const [{ data: pedidosDeuda }, { data: cobros }, { data: pagosProveedorData }, { data: gastosData }, { data: cobrosAnteriorData }] = await Promise.all([
+  const [{ data: pedidosDeuda }, { data: cobros }, { data: pagosProveedorData }, { data: gastosData }, { data: cobrosAnteriorData }, { data: comisionesData }] = await Promise.all([
     supabase.from("pedidos").select("id, saldo_pendiente, created_at")
       .gt("saldo_pendiente", 0).not("estado_interno", "in", '("cerrado","cancelado")'),
     supabase.from("pagos").select("monto").eq("tipo", "cobro")
@@ -725,6 +752,9 @@ export async function getMetricasFinancieras(desde: string, hasta: string) {
       return supabase.from("pagos").select("monto").eq("tipo", "cobro")
         .gte("fecha", desdeAnt).lt("fecha", desdeDate)
     })(),
+    // Comisiones del periodo
+    supabase.from("comisiones_pedido").select("total_comisiones")
+      .gte("created_at", desde).lte("created_at", hasta),
   ])
 
   const totalACobrar = pedidosDeuda?.reduce((s, p) => s + Number(p.saldo_pendiente), 0) ?? 0
@@ -748,8 +778,11 @@ export async function getMetricasFinancieras(desde: string, hasta: string) {
     else franjas["60+ días"] += saldo
   })
 
+  const totalComisiones = comisionesData?.reduce((s, c) => s + Number(c.total_comisiones), 0) ?? 0
+
   return {
     totalACobrar, pedidosConSaldo, totalCobros, cobrosAnterior, totalEgresos, flujoCaja,
+    totalComisiones,
     antiguedad: Object.entries(franjas).map(([franja, monto]) => ({
       franja, monto, porcentaje: totalACobrar > 0 ? (monto / totalACobrar) * 100 : 0,
     })),
@@ -762,7 +795,7 @@ export async function getPosicionIVA(desde: string, hasta: string) {
   const desdeDate = desde.split("T")[0]
   const hastaDate = hasta.split("T")[0]
 
-  const [{ data: pedidos }, { data: compras }, { data: gastos }] = await Promise.all([
+  const [{ data: pedidos }, { data: compras }, { data: gastos }, { data: comisionesIva }] = await Promise.all([
     // IVA debito: de ventas (pedidos) en el periodo
     supabase.from("pedidos").select("monto_total, monto_iva")
       .gte("fecha_ingreso", desde).lte("fecha_ingreso", hasta)
@@ -774,6 +807,9 @@ export async function getPosicionIVA(desde: string, hasta: string) {
     // IVA credito de gastos (only those accounts that include IVA per CATEGORIA_IVA_DEFAULT)
     supabase.from("gastos").select("monto, cuenta:cuentas(codigo)")
       .gte("fecha", desdeDate).lte("fecha", hastaDate),
+    // IVA credito de comisiones de pasarela
+    supabase.from("comisiones_pedido").select("iva_comision_pasarela")
+      .gte("created_at", desde).lte("created_at", hasta),
   ])
 
   // IVA debito from pedidos
@@ -797,13 +833,17 @@ export async function getPosicionIVA(desde: string, hasta: string) {
     return s + calcularIVA(Number(g.monto))
   }, 0) ?? 0
 
-  const saldoAPagar = ivaDebito - ivaCreditoCompras - ivaCreditoGastos
+  // IVA credito from comisiones de pasarela
+  const ivaCreditoComisiones = comisionesIva?.reduce((s, c) => s + Number(c.iva_comision_pasarela), 0) ?? 0
+
+  const saldoAPagar = ivaDebito - ivaCreditoCompras - ivaCreditoGastos - ivaCreditoComisiones
 
   return {
     ivaDebito,
     ivaCreditoCompras,
     ivaCreditoGastos,
-    ivaCreditoTotal: ivaCreditoCompras + ivaCreditoGastos,
+    ivaCreditoComisiones,
+    ivaCreditoTotal: ivaCreditoCompras + ivaCreditoGastos + ivaCreditoComisiones,
     saldoAPagar,
   }
 }

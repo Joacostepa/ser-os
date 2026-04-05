@@ -17,7 +17,7 @@ import { ChangeStatusModal } from "./components/change-status-modal"
 import { PedidoChecklist } from "@/components/pedidos/pedido-checklist"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function PedidoDetailView({ pedido }: { pedido: any }) {
+export function PedidoDetailView({ pedido, userRol = "admin" }: { pedido: any; userRol?: string }) {
   const [statusModalOpen, setStatusModalOpen] = useState(false)
   const router = useRouter()
 
@@ -58,7 +58,7 @@ export function PedidoDetailView({ pedido }: { pedido: any }) {
         {/* Columna derecha — sidebar */}
         <div className="space-y-5">
           <ClientCard cliente={pedido.cliente} />
-          <PaymentsCard pedido={pedido} />
+          <PaymentsCard pedido={pedido} userRol={userRol} />
           <CostCard pedido={pedido} />
           <ShippingCard pedido={pedido} />
           <CommentsCard comentarios={pedido.comentarios || []} pedidoId={pedido.id} />

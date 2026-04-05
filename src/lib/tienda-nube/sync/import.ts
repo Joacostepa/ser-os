@@ -350,30 +350,7 @@ export async function importOrders(tiendaId: string, jobId: string) {
       cotizacionUsd = await getCotizacionVenta("blue")
     } catch { /* ignore */ }
 
-    // Smart filter: if we have existing orders, only fetch what's missing
-    // Get the oldest imported order date — anything before that is missing
-    // Get the newest imported order date — anything after that is missing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filters: Record<string, string> = { sort_by: "created_at-asc" }
-
-    if (existingMap.size > 0) {
-      // Find the oldest imported order to know our coverage window
-      const { data: oldestImported } = await supabase
-        .from("pedidos")
-        .select("fecha_ingreso")
-        .eq("tienda_id", tienda.id)
-        .not("tienda_nube_id", "is", null)
-        .order("fecha_ingreso", { ascending: true })
-        .limit(1)
-        .single()
-
-      if (oldestImported?.fecha_ingreso) {
-        // We have orders from this date onward — fetch older ones first
-        filters.created_at_max = oldestImported.fecha_ingreso
-      }
-    }
-
-    for await (const orders of client.getOrders(filters)) {
+    for await (const orders of client.getOrders({ sort_by: "created_at-asc" })) {
       for (const order of orders) {
         try {
           const tnId = String(order.id)
@@ -381,22 +358,8 @@ export async function importOrders(tiendaId: string, jobId: string) {
           const montoTotal = parseFloat(order.total || "0")
           const montoPagado = isPaid ? montoTotal : 0
 
-          // If already exists, update estado/pago if changed
-          const existing = existingMap.get(tnId)
-          if (existing) {
-            const nuevoEstado: EstadoInterno = order.status === "cancelled"
-              ? "cancelado"
-              : order.status === "closed"
-                ? "cerrado"
-                : isPaid ? "sena_recibida" : "nuevo"
-
-            if (existing.estado_interno !== nuevoEstado || existing.monto_pagado !== montoPagado) {
-              await supabase.from("pedidos").update({
-                estado_interno: nuevoEstado,
-                estado_publico: ESTADO_INTERNO_A_PUBLICO[nuevoEstado],
-                monto_pagado: montoPagado,
-              }).eq("tienda_nube_id", tnId).eq("tienda_id", tienda.id)
-            }
+          // Skip if already exists — instant check via Map (no DB query)
+          if (existingMap.has(tnId)) {
             processed++
             continue
           }

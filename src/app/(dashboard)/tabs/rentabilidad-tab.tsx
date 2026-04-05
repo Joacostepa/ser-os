@@ -109,6 +109,11 @@ export function RentabilidadTab({
               {formatearMontoCompleto(er.margenBruto)} ({er.margenBrutoPct.toFixed(1)}%)
             </span>
           } bold />
+          {er.comisionesPasarela > 0 && (
+            <KPIRow label="(-) Comisiones de pasarela" value={
+              <span className="text-red-600">-{formatearMontoCompleto(er.comisionesPasarela)} ({er.comisionesPasarelaPct?.toFixed(1)}%)</span>
+            } />
+          )}
           <KPIRow label="(-) Gastos operativos" value={<span className="text-red-600">-{formatearMontoCompleto(er.gastosOperativos)}</span>} />
           {/* Subcategorias de gastos indented */}
           {er.gastosDesglose?.map((g: { categoria: string; monto: number }) => (
@@ -162,18 +167,20 @@ export function RentabilidadTab({
               <TableHead>Cliente</TableHead>
               <TableHead className="text-right">Venta</TableHead>
               <TableHead className="text-right">Costo</TableHead>
-              <TableHead className="text-right">Margen</TableHead>
+              <TableHead className="text-right">Comisiones</TableHead>
+              <TableHead className="text-right">Margen real</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {pedidos.slice(0, 20).map((p: any) => (
               <TableRow key={p.id}>
-                <TableCell><Link href={`/pedidos/${p.id}`} className="font-mono hover:underline">#{p.numero_tn || p.id.slice(0, 8)}</Link></TableCell>
+                <TableCell><Link href={`/pedidos/${p.id}`} className="font-mono hover:underline">#{p.numero || p.id.slice(0, 8)}</Link></TableCell>
                 <TableCell>{p.cliente}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatearMonto(p.monto)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatearMonto(p.costo)}</TableCell>
-                <TableCell className="text-right">{margenBadge(p.margen_pct)}</TableCell>
+                <TableCell className="text-right tabular-nums text-red-500">{p.comisiones > 0 ? `-${formatearMonto(p.comisiones)}` : "—"}</TableCell>
+                <TableCell className="text-right">{margenBadge(p.margen_real_pct ?? p.margen_pct)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -21,7 +21,7 @@ const TIPO_PAGO_BADGE: Record<string, { label: string; variant: "default" | "sec
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function PaymentsCard({ pedido }: { pedido: any }) {
+export function PaymentsCard({ pedido, userRol = "admin" }: { pedido: any; userRol?: string }) {
   const [modalOpen, setModalOpen] = useState(false)
   const router = useRouter()
 
@@ -30,8 +30,15 @@ export function PaymentsCard({ pedido }: { pedido: any }) {
   const saldo = Number(pedido.saldo_pendiente || 0)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pagos: any[] = pedido.pagos || []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const comisiones: any[] = pedido.comisiones || []
   const clienteId = pedido.cliente_id || pedido.cliente?.id || ""
   const numeroPedido = pedido.numero_tn || pedido.id?.slice(0, 8) || null
+  const mostrarComisiones = ["admin", "contable"].includes(userRol) && comisiones.length > 0
+
+  // Totals for commissions
+  const totalComisiones = comisiones.reduce((s: number, c: { total_comisiones: number }) => s + Number(c.total_comisiones), 0)
+  const totalNetoRecibido = comisiones.reduce((s: number, c: { monto_neto_recibido: number }) => s + Number(c.monto_neto_recibido), 0)
 
   function handleSuccess() {
     router.refresh()
@@ -110,6 +117,76 @@ export function PaymentsCard({ pedido }: { pedido: any }) {
           <p className="text-sm text-muted-foreground text-center py-2 mt-2">
             Sin pagos registrados
           </p>
+        )}
+
+        {/* Commission details - admin/contable only */}
+        {mostrarComisiones && (
+          <div className="mt-4 border-t border-stone-100 pt-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+              Desglose de comisiones
+            </p>
+            <div className="space-y-3">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {comisiones.map((c: any, idx: number) => {
+                // Find matching pago
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const pago = pagos.find((p: any) => p.id === c.pago_id)
+                const pagoLabel = pago
+                  ? `${format(new Date(pago.fecha), "dd/MM", { locale: es })} — ${pago.metodo}`
+                  : `Pago TN`
+
+                return (
+                  <div key={c.id || idx} className="text-sm space-y-0.5">
+                    <p className="text-xs text-stone-500 font-medium">{pagoLabel}</p>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Monto cobrado</span>
+                      <span className="font-mono tabular-nums">${Number(c.monto_bruto).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    {Number(c.comision_pasarela_neta) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">Comisión ({Number(c.tasa_pasarela).toFixed(2)}%)</span>
+                        <span className="font-mono tabular-nums text-red-500">-${Number(c.comision_pasarela_neta).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    {Number(c.iva_comision_pasarela) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">IVA comisión (21%)</span>
+                        <span className="font-mono tabular-nums text-red-500">-${Number(c.iva_comision_pasarela).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    {Number(c.comision_tn) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">Comisión TN ({Number(c.tasa_tn).toFixed(2)}%)</span>
+                        <span className="font-mono tabular-nums text-red-500">-${Number(c.comision_tn).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-stone-100 pt-0.5">
+                      <span className="text-stone-600 font-medium">Neto recibido</span>
+                      <span className="font-mono tabular-nums font-medium">${Number(c.monto_neto_recibido).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Totals */}
+              {comisiones.length > 0 && (
+                <div className="border-t-2 border-stone-200 pt-2 space-y-0.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Total cobrado</span>
+                    <span className="font-mono tabular-nums font-medium">${montoPagado.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Total comisiones</span>
+                    <span className="font-mono tabular-nums text-red-600 font-medium">-${totalComisiones.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-800 font-semibold">Total neto recibido</span>
+                    <span className="font-mono tabular-nums font-semibold">${totalNetoRecibido.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Register payment button */}

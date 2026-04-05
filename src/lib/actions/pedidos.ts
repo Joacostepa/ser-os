@@ -86,6 +86,7 @@ export async function getPedido(id: string) {
     { data: historial },
     { data: comentarios },
     { data: archivos },
+    { data: comisiones },
   ] = await Promise.all([
     supabase
       .from("items_pedido")
@@ -118,6 +119,11 @@ export async function getPedido(id: string) {
       .eq("entidad_tipo", "pedido")
       .eq("entidad_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("comisiones_pedido")
+      .select("*")
+      .eq("pedido_id", id)
+      .order("created_at", { ascending: true }),
   ])
 
   // Fetch tienda separately (nullable FK)
@@ -132,7 +138,7 @@ export async function getPedido(id: string) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { ...data, items, tareas, pagos, historial, comentarios, archivos, tienda } as any
+  return { ...data, items, tareas, pagos, historial, comentarios, archivos, comisiones, tienda } as any
 }
 
 export async function crearPedido(input: CrearPedidoInput) {

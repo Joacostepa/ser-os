@@ -20,7 +20,7 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
   // 1. Get pedido data
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
-    .select("id, monto_total, numero_tn, estado_interno, cliente:clientes(nombre)")
+    .select("id, monto_total, numero_tn, estado_interno, canal, cliente:clientes(nombre)")
     .eq("id", input.pedido_id)
     .single()
 
@@ -106,6 +106,22 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
     throw new Error("Error al registrar el pago: " + (pagoError?.message ?? "desconocido"))
   }
 
+  // 6c. Calculate commission
+  const { calcularComision } = await import("@/lib/comisiones/calcular-comision")
+  const { mapearMetodoManual } = await import("@/lib/comisiones/mapear-gateway")
+
+  const canalPedido = (pedido as { canal?: string }).canal || "manual"
+  const metodoComision = mapearMetodoManual(input.metodo_pago, canalPedido)
+  const comision = await calcularComision(supabase, input.monto, metodoComision, canalPedido)
+
+  if (comision.total_comisiones > 0) {
+    await supabase.from("comisiones_pedido").insert({
+      pedido_id: input.pedido_id,
+      pago_id: pago.id,
+      ...comision,
+    })
+  }
+
   // 7. Accounting: venta + CMV (only on first payment, if no venta asiento exists)
   let asientoVentaId: number | null = null
   let asientoCMVId: number | null = null
@@ -171,19 +187,40 @@ export async function registrarPago(input: PagoInput): Promise<{ pagoId: string 
     }
   }
 
-  // 8. Always create cobro asiento: Caja/Banco (1.1.1) debe / Deudores (1.1.2) haber
+  // 8. Always create cobro asiento (with commission split if applicable)
   let asientoCobroId: number | null = null
   try {
+    const lineasCobro: Array<{ cuenta_codigo: string; debe: number; haber: number; descripcion: string }> = []
+
+    if (comision.total_comisiones > 0) {
+      // Split: Caja recibe neto, comisiones como gasto, IVA CF
+      lineasCobro.push(
+        { cuenta_codigo: "1.1.1", debe: comision.monto_neto_recibido, haber: 0, descripcion: `Cobro pedido #${numeroPedido} (neto)` },
+        { cuenta_codigo: "6.2.5", debe: comision.comision_pasarela_neta + comision.comision_tn, haber: 0, descripcion: `Comisión pasarela pedido #${numeroPedido}` },
+      )
+      if (comision.iva_comision_pasarela > 0) {
+        lineasCobro.push(
+          { cuenta_codigo: "1.1.5", debe: comision.iva_comision_pasarela, haber: 0, descripcion: `IVA CF comisión pedido #${numeroPedido}` },
+        )
+      }
+      lineasCobro.push(
+        { cuenta_codigo: "1.1.2", debe: 0, haber: input.monto, descripcion: `Cobro pedido #${numeroPedido}` },
+      )
+    } else {
+      // Simple: Caja DEBE / CxC HABER
+      lineasCobro.push(
+        { cuenta_codigo: "1.1.1", debe: input.monto, haber: 0, descripcion: `Cobro pedido #${numeroPedido}` },
+        { cuenta_codigo: "1.1.2", debe: 0, haber: input.monto, descripcion: `Cobro pedido #${numeroPedido}` },
+      )
+    }
+
     asientoCobroId = await crearAsiento({
       fecha: input.fecha,
       descripcion: `Cobro ${conceptoPorTipo(input.tipo_pago, numeroPedido)} - ${clienteNombre}`,
       tipo: "cobro",
       referencia_tipo: "pago",
       referencia_id: pago.id,
-      lineas: [
-        { cuenta_codigo: "1.1.1", debe: input.monto, haber: 0, descripcion: `Cobro pedido #${numeroPedido}` },
-        { cuenta_codigo: "1.1.2", debe: 0, haber: input.monto, descripcion: `Cobro pedido #${numeroPedido}` },
-      ],
+      lineas: lineasCobro,
     })
   } catch (err) {
     console.error("Error al crear asiento de cobro:", err)
