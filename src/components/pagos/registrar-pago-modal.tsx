@@ -12,8 +12,8 @@ import {
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { registrarPago } from "@/lib/pagos"
-import type { PagoInput } from "@/lib/pagos"
+import { registrarPago } from "@/lib/pagos/registrar-pago"
+import type { PagoInput } from "@/lib/pagos/tipos"
 import { toast } from "sonner"
 import { CheckCircle2 } from "lucide-react"
 
