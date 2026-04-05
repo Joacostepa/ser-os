@@ -13,7 +13,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { transicionesValidas, estadoLabels, estadoStyles } from "@/lib/maquina-estados"
+import { transicionesValidas, estadoLabels, estadoStyles } from "@/lib/maquina-estados/transiciones"
 import { actualizarEstadoPedido } from "@/lib/actions/pedidos"
 import type { EstadoInterno } from "@/types/database"
 import { toast } from "sonner"
