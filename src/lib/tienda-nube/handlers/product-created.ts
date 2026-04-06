@@ -63,26 +63,34 @@ export async function handleProductCreated(ctx: WebhookContext) {
 
   // Create/update variants
   for (const variant of product.variants || []) {
-    // Check if variant exists locally
     let varianteId: string | null = null
 
-    if (variant.sku) {
-      const { data: existingVar } = await supabase
-        .from("variantes")
-        .select("id")
-        .eq("producto_id", productoId)
-        .eq("sku", variant.sku)
-        .single()
+    // Look up by TN variant ID in junction table (not by SKU — multiple variants can share SKU)
+    const { data: existingJunction } = await supabase
+      .from("variantes_tienda")
+      .select("variante_id")
+      .eq("tienda_id", tienda.id)
+      .eq("tienda_nube_variant_id", String(variant.id))
+      .maybeSingle()
 
-      if (existingVar) varianteId = existingVar.id
+    if (existingJunction) {
+      varianteId = existingJunction.variante_id
     }
 
-    if (!varianteId) {
-      const variantName = variant.values
-        ?.map((v: unknown) => typeof v === "string" ? v : (v && typeof v === "object" ? ((v as Record<string, string>).es || Object.values(v)[0]) : String(v)))
-        .filter(Boolean)
-        .join(" - ") || nombre
+    const variantName = variant.values
+      ?.map((v: unknown) => typeof v === "string" ? v : (v && typeof v === "object" ? ((v as Record<string, string>).es || Object.values(v)[0]) : String(v)))
+      .filter(Boolean)
+      .join(" - ") || nombre
 
+    if (varianteId) {
+      await supabase.from("variantes").update({
+        nombre: variantName,
+        sku: variant.sku || null,
+        stock_actual: variant.stock ?? 0,
+        precio: variant.price ? parseFloat(variant.price) : null,
+        costo: variant.cost ? parseFloat(variant.cost) : null,
+      }).eq("id", varianteId)
+    } else {
       const { data: newVar, error } = await supabase
         .from("variantes")
         .insert({

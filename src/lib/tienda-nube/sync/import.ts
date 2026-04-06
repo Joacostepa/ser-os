@@ -91,16 +91,21 @@ export async function importProducts(tiendaId: string, jobId: string) {
 
             let varianteId: string
 
-            const { data: existingVar } = variant.sku
-              ? await supabase.from("variantes").select("id").eq("producto_id", productoId).eq("sku", variant.sku).single()
-              : { data: null }
+            // Look up by TN variant ID in junction table (not by SKU, since multiple variants can share SKU)
+            const { data: existingJunction } = await supabase
+              .from("variantes_tienda")
+              .select("variante_id")
+              .eq("tienda_id", tienda.id)
+              .eq("tienda_nube_variant_id", String(variant.id))
+              .maybeSingle()
 
-            if (existingVar) {
-              varianteId = existingVar.id
+            if (existingJunction) {
+              varianteId = existingJunction.variante_id
               await supabase
                 .from("variantes")
                 .update({
                   nombre: varName,
+                  sku: variant.sku || null,
                   stock_actual: variant.stock ?? 0,
                   precio: variant.price ? parseFloat(variant.price) : null,
                   costo: variant.cost ? parseFloat(variant.cost) : null,

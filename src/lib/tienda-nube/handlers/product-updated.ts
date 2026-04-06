@@ -41,33 +41,52 @@ export async function handleProductUpdated(ctx: WebhookContext) {
 
   // Update variants
   for (const variant of product.variants || []) {
+    const variantName = variant.values
+      ?.map((v: unknown) => typeof v === "string" ? v : (v && typeof v === "object" ? ((v as Record<string, string>).es || Object.values(v)[0]) : String(v)))
+      .filter(Boolean)
+      .join(" - ") || nombre
+
     const { data: varJunction } = await supabase
       .from("variantes_tienda")
       .select("variante_id")
       .eq("tienda_id", tienda.id)
       .eq("tienda_nube_variant_id", String(variant.id))
-      .single()
+      .maybeSingle()
 
     if (varJunction) {
-      // Update local variant
-      await supabase
-        .from("variantes")
-        .update({
-          stock_actual: variant.stock ?? 0,
-          costo: variant.cost ? parseFloat(variant.cost) : null,
-          precio: variant.price ? parseFloat(variant.price) : null,
-        })
-        .eq("id", varJunction.variante_id)
+      await supabase.from("variantes").update({
+        nombre: variantName,
+        sku: variant.sku || null,
+        stock_actual: variant.stock ?? 0,
+        precio: variant.price ? parseFloat(variant.price) : null,
+        costo: variant.cost ? parseFloat(variant.cost) : null,
+      }).eq("id", varJunction.variante_id)
 
-      // Update TN-specific data
-      await supabase
-        .from("variantes_tienda")
-        .update({
+      await supabase.from("variantes_tienda").update({
+        stock_tn: variant.stock,
+        precio_tn: variant.price ? parseFloat(variant.price) : null,
+      }).eq("tienda_id", tienda.id).eq("tienda_nube_variant_id", String(variant.id))
+    } else {
+      // Variant doesn't exist locally — create it
+      const { data: newVar } = await supabase.from("variantes").insert({
+        producto_id: junction.producto_id,
+        nombre: variantName,
+        sku: variant.sku || null,
+        stock_actual: variant.stock ?? 0,
+        stock_reservado: 0,
+        costo: variant.cost ? parseFloat(variant.cost) : null,
+        precio: variant.price ? parseFloat(variant.price) : null,
+      }).select("id").single()
+
+      if (newVar) {
+        await supabase.from("variantes_tienda").upsert({
+          variante_id: newVar.id,
+          tienda_id: tienda.id,
+          tienda_nube_variant_id: String(variant.id),
           stock_tn: variant.stock,
           precio_tn: variant.price ? parseFloat(variant.price) : null,
-        })
-        .eq("tienda_id", tienda.id)
-        .eq("tienda_nube_variant_id", String(variant.id))
+        }, { onConflict: "tienda_id,tienda_nube_variant_id" })
+      }
     }
   }
 }
