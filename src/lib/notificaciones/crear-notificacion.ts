@@ -156,11 +156,13 @@ export async function crearNotificacion(input: {
   datos: Record<string, unknown>
   recurso_id?: string
   actor_id?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabaseClient?: any
 }) {
   const template = NOTIFICACION_TEMPLATES[input.tipo]
   if (!template) return
 
-  const supabase = await createClient()
+  const supabase = input.supabaseClient || await createClient()
 
   // Resolve destinatarios by role
   const destinatarios = await getDestinatarios(

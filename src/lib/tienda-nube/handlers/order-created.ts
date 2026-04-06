@@ -164,6 +164,7 @@ export async function handleOrderCreated(ctx: WebhookContext) {
         items_count: order.products?.length || 0,
       },
       recurso_id: pedido.id,
+      supabaseClient: supabase,
     })
   } catch { /* ignore notification errors */ }
 
