@@ -193,7 +193,6 @@ export async function handleOrderPaid(ctx: WebhookContext) {
     .update({
       monto_total: montoTotal,
       monto_pagado: Math.round(nuevoMontoPagado * 100) / 100,
-      saldo_pendiente: Math.max(0, Math.round(nuevoSaldo * 100) / 100),
       estado_interno: nuevoEstado,
       estado_publico: ESTADO_INTERNO_A_PUBLICO[nuevoEstado],
     })

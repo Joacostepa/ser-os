@@ -125,7 +125,6 @@ export async function guardarEdicionPedido(data: EdicionInput) {
       editado: true,
       fecha_ultima_edicion: new Date().toISOString(),
       cantidad_ediciones: cantidadEdiciones,
-      saldo_pendiente: Math.max(0, Math.round((newTotal - totalPagado) * 100) / 100),
     })
     .eq("id", data.pedidoId)
 

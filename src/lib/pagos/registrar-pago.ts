@@ -319,7 +319,6 @@ export async function registrarPago(input: PagoInput): Promise<PagoResult> {
     .from("pedidos")
     .update({
       monto_pagado: Math.round(nuevoMontoPagado * 100) / 100,
-      saldo_pendiente: Math.max(0, Math.round(nuevoSaldo * 100) / 100),
     })
     .eq("id", input.pedido_id)
 
