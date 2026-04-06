@@ -178,7 +178,8 @@ export async function crearNotificacion(input: {
       .from("notificaciones")
       .insert({
         usuario_id: usuarioId,
-        tipo: input.tipo,
+        tipo: "interna" as const,
+        plantilla_id: input.tipo,
         titulo: template.titulo(input.datos),
         mensaje: template.mensaje?.(input.datos) || null,
         recurso_tipo: template.recurso_tipo,

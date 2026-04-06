@@ -23,6 +23,7 @@ import { formatearTiempoRelativo } from "@/lib/formatters"
 interface Notificacion {
   id: string
   tipo: string
+  plantilla_id: string | null
   titulo: string
   mensaje: string
   leida: boolean
@@ -258,7 +259,7 @@ export default function NotificacionesPage() {
               </h3>
               <div className="rounded-xl border border-stone-200 bg-white overflow-hidden divide-y divide-stone-100">
                 {group.items.map((n) => {
-                  const config = getIconConfig(n.tipo)
+                  const config = getIconConfig(n.plantilla_id || n.tipo)
                   const Icon = config.icon
                   return (
                     <button

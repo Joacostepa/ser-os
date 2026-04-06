@@ -22,6 +22,7 @@ import { formatearTiempoRelativo } from "@/lib/formatters"
 interface Notificacion {
   id: string
   tipo: string
+  plantilla_id: string | null
   titulo: string
   mensaje: string
   leida: boolean
@@ -205,7 +206,7 @@ export function NotificacionesBell() {
               </div>
             ) : (
               notificaciones.map((n) => {
-                const config = getIconConfig(n.tipo)
+                const config = getIconConfig(n.plantilla_id || n.tipo)
                 const Icon = config.icon
                 return (
                   <button
