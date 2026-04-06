@@ -141,19 +141,19 @@ export default function PagosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Pagos</h1>
-          <p className="text-sm text-muted-foreground">Registro de cobros y alertas de pago</p>
+          <h1 className="text-2xl font-bold">Cobros</h1>
+          <p className="text-sm text-muted-foreground">Gestión de cobros a clientes</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger
             render={<Button />}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Registrar pago
+            Registrar cobro
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Registrar pago</DialogTitle>
+              <DialogTitle>Registrar cobro</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleRegistrarPago} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -205,7 +205,7 @@ export default function PagosPage() {
                 <Input value={formNotas} onChange={(e) => setFormNotas(e.target.value)} />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Registrando..." : "Registrar pago"}
+                {submitting ? "Registrando..." : "Registrar cobro"}
               </Button>
             </form>
           </DialogContent>
@@ -250,7 +250,7 @@ export default function PagosPage() {
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm" onClick={() => handleSelectPendiente(p)}>
-                        Registrar pago
+                        Registrar cobro
                       </Button>
                     </TableCell>
                   </TableRow>

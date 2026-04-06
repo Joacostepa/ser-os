@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { label: "Tareas", href: "/tareas", icon: CheckSquare },
   { label: "Productos", href: "/productos", icon: Package },
   { label: "Clientes", href: "/clientes", icon: Users },
-  { label: "Pagos", href: "/pagos", icon: CreditCard },
+  { label: "Cobros", href: "/pagos", icon: CreditCard },
   { label: "Proveedores", href: "/proveedores", icon: Truck },
   { label: "Compras", href: "/compras", icon: ShoppingBag },
   { label: "Gastos", href: "/gastos", icon: Receipt },

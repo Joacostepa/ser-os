@@ -14,7 +14,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   tareas: "Tareas",
   productos: "Productos",
   clientes: "Clientes",
-  pagos: "Pagos",
+  pagos: "Cobros",
   configuracion: "Configuraci\u00f3n",
   usuarios: "Usuarios",
   plantillas: "Plantillas",
