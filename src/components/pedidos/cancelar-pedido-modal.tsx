@@ -11,7 +11,16 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { cancelarPedido, MOTIVOS_CANCELACION } from "@/lib/pedidos/cancelar-pedido"
+import { cancelarPedido } from "@/lib/pedidos/cancelar-pedido"
+
+const MOTIVOS_CANCELACION = [
+  "Clienta desistió de la compra",
+  "Falta de stock",
+  "Error en el pedido",
+  "Pedido duplicado",
+  "No se pudo contactar a la clienta",
+  "Otro",
+]
 import { toast } from "sonner"
 import { AlertTriangle, Loader2 } from "lucide-react"
 import { format } from "date-fns"

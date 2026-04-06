@@ -24,18 +24,6 @@ interface CancelarPedidoResult {
   error?: string
 }
 
-const MOTIVOS_CANCELACION = [
-  "Clienta desistió de la compra",
-  "Falta de stock",
-  "Error en el pedido",
-  "Pedido duplicado",
-  "No se pudo contactar a la clienta",
-  "Cancelado desde Tienda Nube",
-  "Otro",
-]
-
-export { MOTIVOS_CANCELACION }
-
 export async function cancelarPedido(input: CancelarPedidoInput): Promise<CancelarPedidoResult> {
   const supabase = input.supabaseClient || await createClient()
 
