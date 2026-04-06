@@ -6,24 +6,24 @@ export async function handleOrderCancelled(ctx: WebhookContext) {
   const { data: pedido } = await supabase
     .from("pedidos")
     .select("id, estado_interno")
-    .eq("tienda_nube_id", resourceId)
+    .eq("tienda_nube_id", String(resourceId))
     .eq("tienda_id", tienda.id)
     .single()
 
   if (!pedido) return
 
-  await supabase
-    .from("pedidos")
-    .update({
-      estado_interno: "cancelado",
-      estado_publico: "recibido",
-    })
-    .eq("id", pedido.id)
+  if (pedido.estado_interno === "cancelado") {
+    console.log(`Webhook order/cancelled: pedido ${pedido.id} ya cancelado. Ignorando.`)
+    return
+  }
 
-  await supabase.from("historial_pedido").insert({
+  const { cancelarPedido } = await import("@/lib/pedidos/cancelar-pedido")
+
+  await cancelarPedido({
     pedido_id: pedido.id,
-    accion: `Pedido cancelado desde Tienda Nube (${tienda.canal})`,
-    estado_anterior: pedido.estado_interno,
-    estado_nuevo: "cancelado",
+    motivo: "Cancelado desde Tienda Nube",
+    notas: `Webhook order/cancelled — TN resource: ${resourceId} — Tienda: ${tienda.canal}`,
+    origen: "webhook_tn",
+    supabaseClient: supabase,
   })
 }

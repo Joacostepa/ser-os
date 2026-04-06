@@ -145,6 +145,16 @@ const NOTIFICACION_TEMPLATES: Record<
     enviar_push: false,
     destinatarios_roles: ["admin"],
   },
+  pedido_cancelado: {
+    titulo: (d) => `Pedido #${d.numero} cancelado`,
+    mensaje: (d) =>
+      `${d.cliente} — ${d.motivo}${Number(d.saldo_favor) > 0 ? ` · Saldo a favor: $${fmt(d.saldo_favor)}` : ""}`,
+    icono: "XCircle",
+    color: "text-red-500",
+    recurso_tipo: "pedido",
+    enviar_push: true,
+    destinatarios_roles: ["admin"],
+  },
 }
 
 // ---------------------------------------------------------------------------

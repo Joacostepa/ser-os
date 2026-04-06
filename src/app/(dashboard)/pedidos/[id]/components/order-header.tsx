@@ -26,7 +26,7 @@ const ESTADO_PAGO_BADGE = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function OrderHeader({ pedido, onAvanzarEstado, userRol = "admin" }: { pedido: any; onAvanzarEstado: () => void; userRol?: string }) {
+export function OrderHeader({ pedido, onAvanzarEstado, onCancelar, userRol = "admin" }: { pedido: any; onAvanzarEstado: () => void; onCancelar?: () => void; userRol?: string }) {
   const canEdit = userRol === "admin" && ESTADOS_EDITABLES.includes(pedido.estado_interno)
   const estadoConfig = ESTADOS_INTERNOS[pedido.estado_interno as EstadoInterno]
 
@@ -96,6 +96,11 @@ export function OrderHeader({ pedido, onAvanzarEstado, userRol = "admin" }: { pe
               Ver en TN
             </Button>
           </a>
+        )}
+        {onCancelar && !["cancelado", "despachado", "entregado", "cerrado"].includes(pedido.estado_interno) && (
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={onCancelar}>
+            Cancelar pedido
+          </Button>
         )}
         <Button size="sm" onClick={onAvanzarEstado}>
           Avanzar estado

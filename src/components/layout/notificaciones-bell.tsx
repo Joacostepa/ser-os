@@ -15,6 +15,7 @@ import {
   Repeat,
   Pencil,
   Tag,
+  XCircle,
   type LucideIcon,
 } from "lucide-react"
 import { formatearTiempoRelativo } from "@/lib/formatters"
@@ -43,6 +44,7 @@ const ICON_CONFIG: Record<string, { icon: LucideIcon; color: string; bg: string 
   compra_recibida: { icon: Truck, color: "text-teal-500", bg: "bg-teal-50" },
   gasto_recurrente: { icon: Repeat, color: "text-amber-500", bg: "bg-amber-50" },
   pedido_editado: { icon: Pencil, color: "text-stone-500", bg: "bg-stone-100" },
+  pedido_cancelado: { icon: XCircle, color: "text-red-500", bg: "bg-red-50" },
   pago_proveedor: { icon: CreditCard, color: "text-amber-500", bg: "bg-amber-50" },
   pedido_despachado: { icon: Truck, color: "text-green-500", bg: "bg-green-50" },
   pedido_sin_clasificar: { icon: Tag, color: "text-amber-500", bg: "bg-amber-50" },

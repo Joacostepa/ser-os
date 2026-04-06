@@ -1,4 +1,5 @@
 import { getCliente } from "@/lib/actions/clientes"
+import { getSaldosFavorCliente } from "@/lib/actions/saldos"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowLeft, Mail, Phone, FileText } from "lucide-react"
+import { ArrowLeft, Mail, Phone, FileText, AlertTriangle } from "lucide-react"
 import { EstadoBadge } from "@/components/shared/status-badge"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -28,7 +29,10 @@ export default async function ClienteDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const cliente = await getCliente(id)
+  const [cliente, saldosFavor] = await Promise.all([
+    getCliente(id),
+    getSaldosFavorCliente(id),
+  ])
 
   const totalDeuda = cliente.pedidos?.reduce(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,6 +101,38 @@ export default async function ClienteDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Saldos a favor */}
+      {saldosFavor.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Saldos a favor
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {saldosFavor.map((s: { id: string; monto_disponible: number; estado: string; pedido?: { numero_tn?: string; numero_interno?: string } }) => {
+              const numeroPedido = s.pedido?.numero_tn || s.pedido?.numero_interno || "—"
+              return (
+                <div key={s.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-100">
+                  <div>
+                    <p className="text-sm font-medium text-stone-800">
+                      <span className="font-[Geist_Mono]">${Number(s.monto_disponible).toLocaleString("es-AR")}</span>
+                      {" de saldo a favor"}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      Origen: Cancelación del pedido #{numeroPedido}
+                      {" · "}
+                      <Badge variant="secondary" className="text-[10px]">{s.estado}</Badge>
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {cliente.notas && (
         <Card>
