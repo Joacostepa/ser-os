@@ -100,17 +100,53 @@ export async function importProducts(tiendaId: string, jobId: string) {
               .maybeSingle()
 
             if (existingJunction) {
-              varianteId = existingJunction.variante_id
-              await supabase
-                .from("variantes")
-                .update({
-                  nombre: varName,
-                  sku: variant.sku || null,
-                  stock_actual: variant.stock ?? 0,
-                  precio: variant.price ? parseFloat(variant.price) : null,
-                  costo: variant.cost ? parseFloat(variant.cost) : null,
-                })
-                .eq("id", varianteId)
+              // Check if this variante_id is shared by OTHER junctions (old bug: same SKU = same variant)
+              const { count: junctionsUsingThisVariant } = await supabase
+                .from("variantes_tienda")
+                .select("id", { count: "exact", head: true })
+                .eq("variante_id", existingJunction.variante_id)
+                .eq("tienda_id", tienda.id)
+
+              if ((junctionsUsingThisVariant ?? 0) > 1) {
+                // Multiple TN variants point to the same local variant — split: create a new one
+                const { data: newVar, error } = await supabase
+                  .from("variantes")
+                  .insert({
+                    producto_id: productoId,
+                    nombre: varName,
+                    sku: variant.sku || null,
+                    stock_actual: variant.stock ?? 0,
+                    stock_reservado: 0,
+                    costo: variant.cost ? parseFloat(variant.cost) : null,
+                    precio: variant.price ? parseFloat(variant.price) : null,
+                  })
+                  .select("id")
+                  .single()
+
+                if (!error && newVar) {
+                  varianteId = newVar.id
+                  // Re-point this junction to the new variant
+                  await supabase
+                    .from("variantes_tienda")
+                    .update({ variante_id: newVar.id })
+                    .eq("tienda_id", tienda.id)
+                    .eq("tienda_nube_variant_id", String(variant.id))
+                } else {
+                  varianteId = existingJunction.variante_id
+                }
+              } else {
+                varianteId = existingJunction.variante_id
+                await supabase
+                  .from("variantes")
+                  .update({
+                    nombre: varName,
+                    sku: variant.sku || null,
+                    stock_actual: variant.stock ?? 0,
+                    precio: variant.price ? parseFloat(variant.price) : null,
+                    costo: variant.cost ? parseFloat(variant.cost) : null,
+                  })
+                  .eq("id", varianteId)
+              }
             } else {
               const { data: newVar, error } = await supabase
                 .from("variantes")
